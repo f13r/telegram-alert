@@ -1,10 +1,21 @@
-import { TelegramClient } from 'telegram';
+import { TelegramClient, utils } from 'telegram';
+import type { Entity } from 'telegram/define.js';
 import { StringSession } from 'telegram/sessions/index.js';
 import { NewMessage } from 'telegram/events/index.js';
 import { EditedMessage } from 'telegram/events/EditedMessage.js';
 import { channelByUsername, env } from '../config.js';
 import type { IncomingMessage, MessageSource } from '../types.js';
-import { recordPost } from '../watchdog.js';
+import { recordOk, recordPost } from '../watchdog.js';
+
+/** How often a live connection marks every channel readable for the watchdog. */
+const HEALTH_EVERY_MS = 5 * 60_000;
+
+/**
+ * The key events are looked up by. GramJS marks channel ids on `message.chatId`
+ * (-100<id>), while `entity.id` is the raw id — they never matched, so every
+ * post was ignored.
+ */
+export const channelKey = (entity: Entity): string => utils.getPeerId(entity);
 
 /**
  * Primary ingestion. The account is READ ONLY: it connects, calls getDialogs
@@ -17,6 +28,7 @@ export class MtprotoSource implements MessageSource {
     readonly name = 'mtproto';
     private client?: TelegramClient;
     private found: string[] = [];
+    private health?: NodeJS.Timeout;
 
     async start(onMessage: (m: IncomingMessage) => Promise<void>): Promise<void> {
         const client = new TelegramClient(new StringSession(env.session), env.apiId, env.apiHash, {
@@ -34,9 +46,9 @@ export class MtprotoSource implements MessageSource {
         // One outbound call, at boot. Everything after this is passive.
         const map = new Map<string, { username: string; title: string }>();
         for (const d of await client.getDialogs({ limit: 500 })) {
-            const e = d.entity as { username?: string; id?: unknown; title?: string } | undefined;
-            if (e?.username && channelByUsername.has(e.username.toLowerCase())) {
-                map.set(String(e.id), { username: e.username, title: e.title ?? e.username });
+            const e = d.entity as { username?: string; title?: string } | undefined;
+            if (d.entity && e?.username && channelByUsername.has(e.username.toLowerCase())) {
+                map.set(channelKey(d.entity), { username: e.username, title: e.title ?? e.username });
             }
         }
 
@@ -77,6 +89,14 @@ export class MtprotoSource implements MessageSource {
 
         client.addEventHandler(handler, new NewMessage({}));
         client.addEventHandler(handler, new EditedMessage({}));
+
+        // Updates are pushed, so a quiet night produces no posts — readability has to
+        // come from the connection itself, or the watchdog reports every channel
+        // unreadable after an hour of silence.
+        const markReadable = (): void => {
+            if (client.connected) for (const u of this.found) recordOk(u);
+        };
+        this.health = setInterval(markReadable, HEALTH_EVERY_MS);
     }
 
     activeChannels(): string[] {
@@ -84,6 +104,7 @@ export class MtprotoSource implements MessageSource {
     }
 
     async stop(): Promise<void> {
+        if (this.health) clearInterval(this.health);
         await this.client?.disconnect();
     }
 }

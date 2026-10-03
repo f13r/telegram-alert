@@ -34,6 +34,8 @@ export function initWatchdog(now = Date.now(), only?: string[]): void {
 export function recordOk(username: string, now = Date.now()): void {
     const h = health.get(username);
     if (h) h.lastOk = now;
+    // Readable again: a cause recorded during an earlier outage no longer applies.
+    reasons.delete(username);
 }
 
 export function recordPost(username: string, now = Date.now()): void {
@@ -42,6 +44,7 @@ export function recordPost(username: string, now = Date.now()): void {
         h.lastOk = now;
         h.lastPost = now;
     }
+    reasons.delete(username);
 }
 
 export function markUnavailable(username: string, reason: string): void {

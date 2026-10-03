@@ -84,3 +84,12 @@ test('backoff grows exponentially and caps at 30 minutes', async () => {
     assert.equal(backoffMs(5), 30 * 60_000);
     assert.equal(backoffMs(20), 30 * 60_000, 'never gives up');
 });
+
+test('a cause recorded in an old outage is not reused once the channel reads again', () => {
+    initWatchdog(T0);
+    markUnavailable('ukraine_pyxx', 'вебпревʼю вимкнено');
+    recordOk('ukraine_pyxx', T0 + HOUR / 2);
+    const [w] = checkWatchdog(T0 + 3 * HOUR);
+    assert.equal(w.kind, 'all-unreadable');
+    assert.doesNotMatch(w.text, /вебпревʼю/);
+});
