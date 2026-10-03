@@ -166,3 +166,25 @@ test('fast per section: "Запорізька область:" style headers spl
     const post = 'Запорізька область:\nКАБи на Запоріжжя.\n\nВінниччина:\nБпЛА на Вінницю.';
     assert.deepEqual(fastTowns(post, ['vinnytsia']), []);
 });
+
+import { isThreatReport } from '../src/danger.js';
+
+test('mixed channel: a short one-paragraph threat post is a report (real Типова posts)', () => {
+    for (const t of ['БПЛа на Козятин', 'Реактивний БпЛА в напрямку Ладижина', '🏍 Реактивний БпЛА з Черкащини в напрямку Вінниччини (Гайсин).']) {
+        assert.ok(isThreatReport(t), t);
+    }
+});
+
+test('mixed channel: a news article with threat words is not a report (Типова 41302, 2026-10-02)', () => {
+    const article =
+        '🏥 Безперервність допомоги та безпека: як працюють медзаклади Вінниці під час повітряних тривог\n\n' +
+        'У лікарнях Вінниці запровадили два режими роботи під час повітряної небезпеки. При загрозі ударних дронів ' +
+        'медзаклади продовжують приймати пацієнтів у звичайному режимі. Під час ракетної або масованої атаки людей ' +
+        'переводять в укриття.';
+    assert.equal(isDanger(article), true, 'the keywords alone do match');
+    assert.equal(isThreatReport(article), false);
+});
+
+test('mixed channel: one long paragraph is not a report either', () => {
+    assert.equal(isThreatReport('У Вінниці під час тривоги ' + 'дуже '.repeat(50) + 'довго'), false);
+});

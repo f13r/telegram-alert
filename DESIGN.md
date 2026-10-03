@@ -172,6 +172,11 @@ Keywords are word-boundary anchored, never raw substrings. `каб` must not mat
 `кабінет`, `ппо` must not match `ппозиція`. `міг` was deliberately **removed** from the
 list — it is also the past tense of *могти* and would fire on ordinary news.
 
+Keywords are necessary but not sufficient: the post must also be **one paragraph, at
+most 200 characters**. Every real threat post on the channel is a single short line
+(«БПЛа на Козятин»); a 2026-10-02 article on hospitals «під час повітряних тривог…
+ударних дронів… ракетної атаки» had five keywords and counted as corroboration.
+
 The three pure air-threat channels are **unfiltered**, so an unusual phrasing there can
 never be silently dropped. 13 fixtures, all passing.
 

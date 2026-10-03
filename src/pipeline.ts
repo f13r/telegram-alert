@@ -1,5 +1,5 @@
 import { channelByUsername, channelsConfig, env, townById } from './config.js';
-import { fastTowns, isDanger } from './danger.js';
+import { fastTowns, isThreatReport } from './danger.js';
 import { formatAlert } from './format.js';
 import { scanTowns } from './matcher.js';
 import { logMessage } from './shadow.js';
@@ -47,7 +47,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
 
     const text = stripFooter(msg.text, cfg.stripFooterPatterns);
     const { matches, landmarkOnly } = scanTowns(text);
-    const danger = cfg.requiresThreat ? isDanger(text) : null;
+    const danger = cfg.requiresThreat ? isThreatReport(text) : null;
     const fast = new Set(fastTowns(text, matches.map((m) => m.townId)));
 
     const log = (dropped?: string, confidencePct?: Record<string, number>) =>

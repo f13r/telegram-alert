@@ -25,6 +25,21 @@ export function isDanger(text: string): boolean {
     return dangerRe.test(normalize(text));
 }
 
+/** Real threat posts on a mixed channel are one short line; news runs longer. */
+const MAX_REPORT_CHARS = 200;
+
+/**
+ * A mixed channel's post counts as a threat report only if it is short, one
+ * paragraph AND has a danger keyword. Keywords alone are not enough: a Типова
+ * article on how hospitals work «під час повітряних тривог… ударних дронів…
+ * ракетної атаки» has five of them (2026-10-02), and would otherwise count as
+ * corroboration in the town's window.
+ */
+export function isThreatReport(text: string): boolean {
+    const t = text.trim();
+    return t.length <= MAX_REPORT_CHARS && !/\n\s*\n/.test(t) && isDanger(t);
+}
+
 /** Missile or КАБ wording — passes a town's cooldown. Applied to every channel. */
 export function isFastThreat(text: string): boolean {
     return fastRe.test(normalize(text));
