@@ -57,3 +57,13 @@ test('an unchanged post already seen is not emitted again', () => {
     const seen = new Map([['kpszsu:5', 'БпЛА']]);
     assert.deepEqual(postsToEmit('kpszsu', [{ id: 5, text: 'БпЛА', date: at(1) }], 5, seen, NOW, 10 * MIN), []);
 });
+
+import fs from 'node:fs';
+import { parse } from '../src/sources/scrape.js';
+
+test('a reply post is read as its own text, not the quoted post (live kpszsu 82536)', () => {
+    const html = fs.readFileSync(new URL('./fixtures/reply-post.html', import.meta.url), 'utf8');
+    const [p] = parse(html, 'kpszsu');
+    assert.equal(p.id, 82536);
+    assert.equal(p.text, '💣 Ще КАБи на Суми!');
+});

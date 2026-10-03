@@ -283,7 +283,10 @@ export function parse(html: string, username: string): Post[] {
         const id = Number(post?.split('/')[1]);
         if (!Number.isFinite(id)) return;
 
-        const node = $(el).find('.tgme_widget_message_text').first();
+        // A reply shows the quoted post first, in its own .tgme_widget_message_text
+        // (js-message_reply_text). Reading that would alert on the quote and miss
+        // the reply — and short replies are exactly the follow-ups we watch for.
+        const node = $(el).find('.tgme_widget_message_text').not('.js-message_reply_text').first();
         if (!node.length) return;
         // <br> carries real meaning in these posts; .text() would lose the lines.
         const text = cheerio
