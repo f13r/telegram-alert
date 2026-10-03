@@ -16,6 +16,19 @@ function sourcesWord(n: number): string {
     return !teen && last >= 2 && last <= 4 ? 'джерела' : 'джерел';
 }
 
+/**
+ * Telegram rejects a message over 4096 characters (400, not retried), so an
+ * over-long post would reach nobody. Header and footer stay well under the gap.
+ */
+const MAX_POST_CHARS = 3500;
+
+function clip(text: string): string {
+    if (text.length <= MAX_POST_CHARS) return text;
+    // Never cut an emoji (surrogate pair) in half.
+    const cut = /[\uD800-\uDBFF]/.test(text[MAX_POST_CHARS - 1]) ? MAX_POST_CHARS - 1 : MAX_POST_CHARS;
+    return text.slice(0, cut) + '…';
+}
+
 export interface ShownTown {
     town: TownCfg;
     d: WindowDecision;
@@ -55,7 +68,7 @@ export function formatAlert(msg: IncomingMessage, text: string, label: string, s
     return [
         header,
         '',
-        escapeHtml(text),
+        escapeHtml(clip(text)),
         '',
         `<i>${escapeHtml(label)} · ${kyivTime.format(msg.date)}${confidence} · <a href="${link}">відкрити</a></i>`,
     ].join('\n');

@@ -251,3 +251,13 @@ test('pipeline: an edit that turns a cooldown-held post into a missile post aler
     await post(4.5, 82901, 'Ракета на Вінницю!', true);
     assert.equal(sent.length, 2, 'a typo fix after that does not re-alert');
 });
+
+test('format: a post over Telegram\'s 4096-char limit is cut, link kept', () => {
+    const long = '🚀'.repeat(1000) + 'Вінниця '.repeat(600);
+    const html = formatAlert(msg, long, 'ПС ЗСУ', [{ town: townById.get('vinnytsia')!, d: dec(90, true) }]);
+    const visible = html.replace(/<[^>]+>/g, '');
+    assert.ok(visible.length <= 4096, `visible length ${visible.length}`);
+    assert.match(html, /…\n/);
+    assert.match(html, /відкрити<\/a><\/i>$/);
+    assert.doesNotMatch(html, /[\uD800-\uDBFF](?![\uDC00-\uDFFF])/, 'no split emoji');
+});
