@@ -1,4 +1,4 @@
-import { channelsConfig, env } from './config.js';
+import { channelByUsername, channelsConfig, env } from './config.js';
 import type { WindowState } from './types.js';
 
 export interface WindowDecision {
@@ -13,8 +13,7 @@ export interface WindowDecision {
 }
 
 const reliabilityOf = (username: string): number =>
-    channelsConfig.channels.find((c) => c.username.toLowerCase() === username.toLowerCase())
-        ?.reliability ?? 0;
+    channelByUsername.get(username.toLowerCase())?.reliability ?? 0;
 
 /**
  * Record a match and decide whether it is delivered.

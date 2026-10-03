@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import type { Telegraf } from 'telegraf';
 import { getSubscribers, removeSubscriber } from './storage.js';
 import type { Subscriber } from './types.js';
@@ -33,8 +34,6 @@ export function groupByTowns(
 
 /** Pauses before each retry. A home connection that flaps usually recovers within these. */
 const RETRY_DELAYS_MS = [2_000, 5_000, 15_000];
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * `silent` maps to Telegram's disable_notification: the message still appears

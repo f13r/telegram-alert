@@ -1,7 +1,6 @@
 import { fastThreatKeywords, threatKeywords, type ThreatKeywords } from './config.js';
-import { normalize } from './text.js';
+import { escapeRe, normalize } from './text.js';
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** "х-101" also matches a non-breaking hyphen, en/em dash or minus sign. */
 const anyHyphen = (s: string) => s.replace(/-/g, '[-\u2010-\u2015\u2212]');
 

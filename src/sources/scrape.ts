@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { channelsConfig, env } from '../config.js';
@@ -9,8 +10,6 @@ const INTERVAL_SEC = Number(process.env.SCRAPE_INTERVAL_SEC) || 20;
 const UA =
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
     '(KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Consecutive failures before we stop calling it a blip and diagnose it. */
 export const SUSTAINED_FAILURES = 4;

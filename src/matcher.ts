@@ -1,8 +1,6 @@
 import { towns, vocabulary, type TownTarget } from './config.js';
-import { normalize } from './text.js';
+import { escapeRe, normalize } from './text.js';
 import type { TownMatch } from './types.js';
-
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 interface Compiled {
     id: string;

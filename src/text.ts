@@ -33,6 +33,9 @@ export function stripFooter(text: string, patterns: string[]): string {
     return out.replace(/\n{3,}/g, '\n\n').trim();
 }
 
+/** Escape a literal for use inside a RegExp. */
+export const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export function escapeHtml(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
