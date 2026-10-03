@@ -67,3 +67,21 @@ test('a reply post is read as its own text, not the quoted post (live kpszsu 825
     assert.equal(p.id, 82536);
     assert.equal(p.text, '💣 Ще КАБи на Суми!');
 });
+
+import { forgetOffPage } from '../src/sources/scrape.js';
+
+test('a slow channel\'s posts still on its page are remembered however busy other channels are', () => {
+    const seen = new Map<string, string>();
+    const page = (u: string, ids: number[]) => ids.map((id) => ({ id, text: `${u}${id}`, date: at(1) }));
+    postsToEmit('vinnitsa_vinnistya', page('vinnitsa_vinnistya', [41311, 41312]), 0, seen, NOW, 10 * MIN);
+    for (let n = 0; n < 50; n++) {
+        const ids = Array.from({ length: 20 }, (_, i) => 1000 + n * 20 + i);
+        postsToEmit('kpszsu', page('kpszsu', ids), 0, seen, NOW, 10 * MIN);
+        forgetOffPage('kpszsu', page('kpszsu', ids), seen);
+    }
+    assert.equal(seen.get('vinnitsa_vinnistya:41311'), 'vinnitsa_vinnistya41311');
+    assert.equal([...seen.keys()].filter((k) => k.startsWith('kpszsu:')).length, 20, 'busy channel stays bounded');
+    // An edit to the slow channel's post is still detected.
+    const out = postsToEmit('vinnitsa_vinnistya', [{ id: 41311, text: 'БпЛА на Вінницю', date: at(1) }], 41312, seen, NOW, 10 * MIN);
+    assert.equal(out[0]?.isEdit, true);
+});

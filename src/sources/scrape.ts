@@ -71,6 +71,21 @@ export function postsToEmit(
  *
  * Poll interval plus Telegram's edge caching put real latency at roughly 15–60s.
  */
+/**
+ * Forget this channel's posts that have scrolled off its page — they can no longer
+ * be seen, so no edit to them can be detected anyway. Keeps memory bounded per
+ * channel, so a busy channel never evicts a slow channel's posts that are still
+ * on its page (and whose edits must still be caught).
+ */
+export function forgetOffPage(username: string, posts: Post[], seenText: Map<string, string>): void {
+    if (posts.length === 0) return;
+    const oldest = Math.min(...posts.map((p) => p.id));
+    const prefix = `${username}:`;
+    for (const k of seenText.keys()) {
+        if (k.startsWith(prefix) && Number(k.slice(prefix.length)) < oldest) seenText.delete(k);
+    }
+}
+
 export class ScrapeSource implements MessageSource {
     readonly name = 'scrape';
     private stopped = false;
@@ -192,9 +207,7 @@ export class ScrapeSource implements MessageSource {
 
         if (maxId > prev) recordPost(username);
         this.lastId.set(username, maxId);
-        if (this.seenText.size > 400) {
-            for (const k of [...this.seenText.keys()].slice(0, 200)) this.seenText.delete(k);
-        }
+        forgetOffPage(username, posts, this.seenText);
     }
 
     activeChannels(): string[] {
