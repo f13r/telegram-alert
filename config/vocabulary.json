@@ -1,7 +1,7 @@
 {
   "_about": "Text normalization shared by every town in config/towns/ and by the danger filter. Town vocabularies live in config/towns/<id>.json.",
   "normalization": {
-    "_note": "Applied to message text BEFORE cyrillic matching. Latin matching runs on the raw (only whitespace/invisible-cleaned) text, because folding latin->cyrillic would destroy 'Vinnytsia'.",
+    "_note": "Applied to message text BEFORE cyrillic matching. Latin matching runs on the cleaned text (stress marks/invisible chars stripped, whitespace collapsed, no folding or lowercasing), because folding latin->cyrillic would destroy 'Vinnytsia'.",
     "unicodeForm": "NFC",
     "stripCombining": [
       "́",

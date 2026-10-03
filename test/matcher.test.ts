@@ -188,3 +188,11 @@ test('mixed channel: a news article with threat words is not a report (Типо�
 test('mixed channel: one long paragraph is not a report either', () => {
     assert.equal(isThreatReport('У Вінниці під час тривоги ' + 'дуже '.repeat(50) + 'довго'), false);
 });
+
+import { matchTowns } from '../src/matcher.js';
+
+test('latin: invisible characters and stress marks do not hide a town', () => {
+    for (const t of ['Drones heading to Vinny\u00ADtsia', 'Missile over Vinnytsia\u200B', 'UAV near Vinny\u0301tsia']) {
+        assert.deepEqual(matchTowns(t).map((m) => m.townId), ['vinnytsia'], t);
+    }
+});

@@ -1,5 +1,5 @@
 import { towns, vocabulary, type TownTarget } from './config.js';
-import { escapeRe, normalize } from './text.js';
+import { clean, escapeRe, normalize } from './text.js';
 import type { TownMatch } from './types.js';
 
 interface Compiled {
@@ -39,13 +39,14 @@ export interface TownScan {
 /** Every town this text names, split into real mentions and landmark-only ones. */
 export function scanTowns(raw: string): TownScan {
     const norm = normalize(raw);
+    const latin = clean(raw);
     const matches: TownMatch[] = [];
     const landmarkOnly: string[] = [];
     for (const town of compiled) {
         let match: TownMatch | undefined;
         let landmark = false;
         for (const c of town.targets) {
-            const text = c.matchOn === 'raw' ? raw : norm;
+            const text = c.matchOn === 'raw' ? latin : norm;
             for (const hit of text.matchAll(c.re)) {
                 if (landmarkRe.test(text.slice(Math.max(0, hit.index - LANDMARK_LOOKBEHIND), hit.index))) {
                     landmark = true;

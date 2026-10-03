@@ -3,21 +3,28 @@ import { vocabulary } from './config.js';
 const { stripCombining, stripInvisible, latinToCyrillicHomoglyphs } = vocabulary.normalization;
 
 /**
- * Prepare text for CYRILLIC matching: drop stress marks and invisible characters,
- * fold latin look-alikes onto Cyrillic (people type "Вiнниця" with a latin i),
- * collapse whitespace, lowercase.
- *
- * Latin matching deliberately runs on the RAW text — folding here would turn
- * "Vinnytsia" into mush.
+ * Drop stress marks and invisible characters, collapse whitespace. Changes no
+ * letters, so it is what LATIN matching runs on: a soft hyphen (U+00AD) inside "Vinnytsia"
+ * no longer hides the town.
  */
-export function normalize(input: string): string {
+export function clean(input: string): string {
     // Decompose first: NFC would fuse a grave stress onto и as the single code
     // point ѝ, which no longer contains the mark we strip.
     let s = input.normalize('NFD');
     for (const c of [...stripCombining, ...stripInvisible]) s = s.split(c).join('');
-    s = s.normalize('NFC');
-    s = s.replace(/[A-Za-z]/g, (ch) => latinToCyrillicHomoglyphs[ch] ?? ch);
-    return s.replace(/\s+/g, ' ').trim().toLowerCase();
+    return s.normalize('NFC').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Prepare text for CYRILLIC matching: clean(), then fold latin look-alikes onto
+ * Cyrillic (people type "Вiнниця" with a latin i) and lowercase.
+ *
+ * Latin matching runs on clean() alone — folding would turn "Vinnytsia" into mush.
+ */
+export function normalize(input: string): string {
+    return clean(input)
+        .replace(/[A-Za-z]/g, (ch) => latinToCyrillicHomoglyphs[ch] ?? ch)
+        .toLowerCase();
 }
 
 /**
