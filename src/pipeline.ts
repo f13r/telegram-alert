@@ -1,5 +1,5 @@
 import { channelByUsername, channelsConfig, env, townById } from './config.js';
-import { isDanger, isFastThreat } from './danger.js';
+import { fastTowns, isDanger } from './danger.js';
 import { formatAlert } from './format.js';
 import { scanTowns } from './matcher.js';
 import { logMessage } from './shadow.js';
@@ -34,7 +34,8 @@ export interface PipelineDeps {
  *                     the window but never delivered; it only adds confidence once
  *                     a reliable channel reports the same town
  *   cooldown        → the town went loud less than COOLDOWN_MIN ago; not delivered
- *                     and not counted. Missile/КАБ posts (`fast`) are the exception:
+ *                     and not counted. Missile/КАБ posts (`fast`, judged on the town's
+ *                     own region section — see fastTowns) are the exception:
  *                     they go loud through a cooldown and restart it.
  *
  * Each town runs its own window, so a loud Козятин never puts Вінниця in cooldown.
@@ -47,7 +48,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
     const text = stripFooter(msg.text, cfg.stripFooterPatterns);
     const { matches, landmarkOnly } = scanTowns(text);
     const danger = cfg.requiresThreat ? isDanger(text) : null;
-    const fast = isFastThreat(text);
+    const fast = new Set(fastTowns(text, matches.map((m) => m.townId)));
 
     const log = (dropped?: string, confidencePct?: Record<string, number>) =>
         logMessage({
@@ -59,7 +60,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
             matched: matches.length > 0,
             towns: matches.map((m) => m.townId),
             danger,
-            ...(fast ? { fast } : {}),
+            ...(fast.size ? { fast: true } : {}),
             ...(landmarkOnly.length ? { landmarkOnly } : {}),
             ...(confidencePct ? { confidencePct } : {}),
             ...(dropped ? { dropped } : {}),
@@ -75,10 +76,11 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
         const key = `${msg.channelUsername}:${msg.messageId}:${m.townId}`;
         // An edit that turns the post into a missile post is new information: it
         // must pass a cooldown that held the original, so it is let through once.
-        if (wasAlerted(key) && (!fast || wasAlerted(`${key}:fast`))) continue;
-        decisions.set(m.townId, recordMatch(getTownWindow(m.townId), cfg.username, fast, now));
+        const isFast = fast.has(m.townId);
+        if (wasAlerted(key) && (!isFast || wasAlerted(`${key}:fast`))) continue;
+        decisions.set(m.townId, recordMatch(getTownWindow(m.townId), cfg.username, isFast, now));
         markAlerted(key);
-        if (fast) markAlerted(`${key}:fast`);
+        if (isFast) markAlerted(`${key}:fast`);
     }
     if (decisions.size === 0) return log('already-alerted');
     saveWindows();

@@ -250,3 +250,18 @@ test('format: a post over Telegram\'s 4096-char limit is cut, link kept', () => 
     assert.match(html, /відкрити<\/a><\/i>$/);
     assert.doesNotMatch(html, /[\uD800-\uDBFF](?![\uDC00-\uDFFF])/, 'no split emoji');
 });
+
+test('pipeline: a missile for another oblast in a digest does not break a town\'s cooldown', async () => {
+    const delivered: string[] = [];
+    // Three days ahead: earlier tests leave towns in cooldown at the real clock.
+    const t0 = Date.now() + 3 * 24 * 60 * 60_000;
+    let now = t0;
+    const deps = { now: () => now, deliver: async (d: Map<string, WindowDecision>) => void delivered.push(...d.keys()) };
+    const post = async (min: number, messageId: number, text: string) => {
+        now = t0 + min * 60_000;
+        await handleMessage({ channelUsername: 'ukraine_pyxx', channelTitle: '', messageId, date: new Date(now), text, isEdit: false }, deps);
+    };
+    await post(0, 95001, 'Вінниччина:\nБпЛА курсом на Козятин.');
+    await post(4, 95002, 'Харківщина:\n2х ракети на Харків.\n\nВінниччина:\nБпЛА курсом на Козятин.');
+    assert.deepEqual(delivered, ['koziatyn']);
+});

@@ -238,7 +238,10 @@ every LOUD clears sources: after a cooldown, confidence starts fresh
 **At most one message per town per 15 minutes**, measured from the loud alert, not from
 the last post. A long raid sends a message every ~15 minutes while posts keep coming; a
 drone flurry within one minute still sends once. Missiles and КАБ get through any
-cooldown because they reach a town in minutes. Replaced the sliding 30 min window on
+cooldown because they reach a town in minutes. In a digest post with region headers
+(«Сумщина: … Вінниччина: …») a missile counts only for towns in its own section, plus
+any preamble before the first header — «Харківщина: ракети… Вінниччина: БпЛА на
+Ладижин» is a drone for Ладижин. Replaced the sliding 30 min window on
 2026-10-03: posts kept extending it, so a second threat during a long raid was never
 sent (00:09 Ладижин).
 

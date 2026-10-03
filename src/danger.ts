@@ -1,4 +1,5 @@
 import { fastThreatKeywords, threatKeywords, type ThreatKeywords } from './config.js';
+import { scanTowns } from './matcher.js';
 import { escapeRe, normalize } from './text.js';
 
 /** "х-101" also matches a non-breaking hyphen, en/em dash or minus sign. */
@@ -27,4 +28,30 @@ export function isDanger(text: string): boolean {
 /** Missile or КАБ wording — passes a town's cooldown. Applied to every channel. */
 export function isFastThreat(text: string): boolean {
     return fastRe.test(normalize(text));
+}
+
+/**
+ * A line opening a region section in a digest post: «Сумщина:», «Вінниччина:»,
+ * «Запорізька область:». ukraine_pyxx lists several oblasts in one post.
+ */
+const REGION_HEADER = /^[^\p{L}\n]*\p{Lu}[\p{L}ʼ'’-]*(?:щина|ччина|\s+область)\s*:/gmu;
+
+/**
+ * The towns, out of `towns`, that this post threatens with a missile or КАБ.
+ * Judged per region section — «Харківщина: ракети… Вінниччина: БпЛА на Ладижин»
+ * is a drone for Ладижин and must not break its cooldown. Text before the first
+ * header (a general «Ракетна небезпека!») applies to every section. A post without
+ * headers is one section.
+ */
+export function fastTowns(text: string, towns: string[]): string[] {
+    const starts = [...text.matchAll(REGION_HEADER)].map((m) => m.index);
+    if (starts.length === 0) return isFastThreat(text) ? [...towns] : [];
+
+    const preambleFast = isFastThreat(text.slice(0, starts[0]));
+    const sections = starts.map((s, i) => text.slice(s, starts[i + 1]));
+    return towns.filter(
+        (t) =>
+            preambleFast ||
+            sections.some((sec) => isFastThreat(sec) && scanTowns(sec).matches.some((m) => m.townId === t)),
+    );
 }

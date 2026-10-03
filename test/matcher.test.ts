@@ -140,3 +140,29 @@ test('a missile designation with a non-ASCII hyphen is fast', () => {
     assert.ok(isFastThreat('Х‑101 курсом на Вінницю'), 'non-breaking hyphen');
     assert.ok(isFastThreat('Х–101 курсом на Вінницю'), 'en dash');
 });
+
+import { fastTowns } from '../src/danger.js';
+
+test('fast is judged per region section: a missile for another oblast does not make a town fast', () => {
+    const digest = 'Харківщина:\n2х ракети на Харків.\n\nВінниччина:\nБпЛА курсом на Ладижин.';
+    assert.deepEqual(fastTowns(digest, ['ladyzhyn']), []);
+});
+
+test('fast per section: a missile in the town\'s own section is fast', () => {
+    const digest = 'Сумщина:\nБпЛА курсом на Стецьківку.\n\nВінниччина:\n2х крилаті ракети курсом на Вінницю.';
+    assert.deepEqual(fastTowns(digest, ['vinnytsia']), ['vinnytsia']);
+});
+
+test('fast per section: a post without region headers is judged whole', () => {
+    assert.deepEqual(fastTowns('🚀 Ракета з півночі.\nКурсом на Козятин', ['koziatyn']), ['koziatyn']);
+});
+
+test('fast per section: a preamble before the first header applies to every section', () => {
+    const post = '⚠️ Ракетна небезпека!\n\nСумщина:\nБпЛА.\n\nВінниччина:\nБпЛА на Вінницю.';
+    assert.deepEqual(fastTowns(post, ['vinnytsia']), ['vinnytsia']);
+});
+
+test('fast per section: "Запорізька область:" style headers split too', () => {
+    const post = 'Запорізька область:\nКАБи на Запоріжжя.\n\nВінниччина:\nБпЛА на Вінницю.';
+    assert.deepEqual(fastTowns(post, ['vinnytsia']), []);
+});
