@@ -78,14 +78,19 @@ async function main(): Promise<void> {
     cron.schedule('43 * * * *', () => {
         for (const w of checkWatchdog()) {
             console.warn(`[watchdog] ${w.kind}`);
-            void send(w.text, true);
+            send(w.text, true).catch((e) => console.error('[watchdog] send:', (e as Error).message));
         }
     }, { timezone: 'Europe/Kyiv' });
 
     const shutdown = async (sig: string): Promise<void> => {
         console.log(`\n[boot] ${sig}, stopping`);
-        await source.stop();
-        if (!dryRun) bot.stop(sig);
+        try {
+            await source.stop();
+            // Throws «Bot is not running!» if launch() never got past getMe.
+            if (!dryRun) bot.stop(sig);
+        } catch (e) {
+            console.error('[boot] stop:', (e as Error).message);
+        }
         process.exit(0);
     };
     process.once('SIGINT', () => void shutdown('SIGINT'));

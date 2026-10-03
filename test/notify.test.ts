@@ -44,3 +44,15 @@ test('send: 400 (bad message) is not retried', async () => {
     await sendTo(bot, [1], 'h', false, [0, 0, 0]);
     assert.equal(attempts[1], 1);
 });
+
+test('send: a 403 whose unsubscribe cannot be saved (disk read-only) is logged, never thrown', async () => {
+    const { addSubscriber } = await import('../src/storage.js');
+    addSubscriber(77, 'x');
+    fs.chmodSync(process.env.DATA_DIR!, 0o500);
+    try {
+        const { bot } = fakeBot({ 77: [tgError(403)] });
+        await sendTo(bot, [77], 'h', false, [0, 0, 0]);
+    } finally {
+        fs.chmodSync(process.env.DATA_DIR!, 0o700);
+    }
+});

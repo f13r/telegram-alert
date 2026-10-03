@@ -70,8 +70,13 @@ export async function sendTo(
                 const why = err.response?.description ?? (e as Error).message;
                 if (code === 403) {
                     // Blocked the bot or deleted the chat — stop trying forever.
-                    removeSubscriber(chatId);
-                    console.warn(`[notify] ${chatId} blocked the bot, unsubscribed`);
+                    try {
+                        removeSubscriber(chatId);
+                        console.warn(`[notify] ${chatId} blocked the bot, unsubscribed`);
+                    } catch (err2) {
+                        // data.json unwritable — never let it abort the other sends.
+                        console.error(`[notify] ${chatId} blocked the bot, unsubscribe failed:`, (err2 as Error).message);
+                    }
                 } else if (code === 400 || attempt >= retryDelaysMs.length) {
                     console.error(`[notify] ${chatId}: ${why} — giving up after ${attempt + 1} attempt(s)`);
                 } else {
