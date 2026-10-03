@@ -28,3 +28,32 @@ test('a 302 before any successful poll says so', async () => {
     assert.match(line, /lastOk=never/);
     assert.match(line, /before=skipped/);
 });
+
+import { postsToEmit } from '../src/sources/scrape.js';
+
+const MIN = 60_000;
+const NOW = Date.parse('2026-10-03T00:30:00Z');
+const at = (minAgo: number) => new Date(NOW - minAgo * MIN);
+
+test('first poll after start emits recent posts, so a threat posted during a restart is not lost', () => {
+    const seen = new Map<string, string>();
+    const out = postsToEmit('kpszsu', [
+        { id: 1, text: 'old', date: at(60) },
+        { id: 2, text: 'БпЛА на Вінницю', date: at(1) },
+    ], 0, seen, NOW, 10 * MIN);
+    assert.deepEqual(out.map((p) => [p.id, p.isEdit]), [[2, false]]);
+    assert.equal(seen.size, 2, 'every post is remembered, emitted or not');
+});
+
+test('an edit keeps the post date — editing an old post does not make it fresh', () => {
+    const seen = new Map([['kpszsu:5', 'БпЛА']]);
+    const out = postsToEmit('kpszsu', [{ id: 5, text: 'БпЛА на Вінницю', date: at(15) }], 5, seen, NOW, 10 * MIN);
+    assert.equal(out.length, 1);
+    assert.equal(out[0].isEdit, true);
+    assert.equal(out[0].date.getTime(), at(15).getTime());
+});
+
+test('an unchanged post already seen is not emitted again', () => {
+    const seen = new Map([['kpszsu:5', 'БпЛА']]);
+    assert.deepEqual(postsToEmit('kpszsu', [{ id: 5, text: 'БпЛА', date: at(1) }], 5, seen, NOW, 10 * MIN), []);
+});

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { channelsConfig } from '../config.js';
+import { channelsConfig, env } from '../config.js';
 import type { ChannelCfg } from '../types.js';
 import type { IncomingMessage, MessageSource } from '../types.js';
 import { markUnavailable, recordOk, recordPost } from '../watchdog.js';
@@ -28,6 +28,45 @@ interface Post {
     date: Date;
 }
 
+export interface Emitted extends Post {
+    isEdit: boolean;
+}
+
+/**
+ * Which posts on a freshly fetched page are worth handing to the pipeline, and
+ * remember what every post said.
+ *
+ *  - new (id above `lastId`) → emitted. On the first poll after a start `lastId`
+ *    is 0, so only posts within `freshMs` are emitted: a threat posted while the
+ *    bot restarted must still alert, but hours-old posts are not worth a log line.
+ *    The pipeline's persisted alertedIds stop anything already alerted.
+ *  - text changed → emitted as an edit, dated by the ORIGINAL post. Telegram's
+ *    preview carries no edit time, and "now" would let an edit to an old post
+ *    (Типова appends «ㅤ» to nearly every post) pass the freshness gate.
+ */
+export function postsToEmit(
+    username: string,
+    posts: Post[],
+    lastId: number,
+    seenText: Map<string, string>,
+    now: number,
+    freshMs: number,
+): Emitted[] {
+    const out: Emitted[] = [];
+    for (const p of posts) {
+        const key = `${username}:${p.id}`;
+        const before = seenText.get(key);
+        seenText.set(key, p.text);
+
+        const isEdit = before !== undefined && before !== p.text;
+        const isNew = p.id > lastId && before === undefined;
+        if (isEdit || (isNew && (lastId > 0 || now - p.date.getTime() <= freshMs))) {
+            out.push({ ...p, isEdit });
+        }
+    }
+    return out;
+}
+
 /**
  * Credential-free ingestion: polls the public t.me/s/<channel> preview pages.
  *
@@ -53,27 +92,32 @@ export class ScrapeSource implements MessageSource {
                 console.warn(`[scrape] @${c.username} has no public t.me/s page — skipped (MTProto could read it)`);
             }
         }
-        console.log(`[scrape] baseline pass over ${this.usable.length} channels`);
-        // First pass records current state without alerting — otherwise startup
-        // would replay the last 20 posts of every channel as live threats.
-        for (const c of this.usable) {
-            await this.poll(c.username, c.label, onMessage, true);
-            await sleep(500);
-        }
+        // No silent baseline pass: the first poll alerts on posts that are still
+        // fresh, so a threat posted during a restart is not lost (see postsToEmit).
+        await this.pollAll(onMessage);
         console.log(`[scrape] polling every ${INTERVAL_SEC}s`);
         this.schedule(onMessage);
     }
 
-    private schedule(onMessage: (m: IncomingMessage) => Promise<void>): void {
-        this.timer = setTimeout(async () => {
-            for (const c of this.usable) {
-                if (this.stopped) return;
-                await this.poll(c.username, c.label, onMessage, false);
-                // Stagger so we never fire four requests at the same instant.
-                await sleep(400 + Math.random() * 400);
+    private async pollAll(onMessage: (m: IncomingMessage) => Promise<void>): Promise<void> {
+        for (const c of this.usable) {
+            if (this.stopped) return;
+            try {
+                await this.poll(c.username, c.label, onMessage);
+            } catch (e) {
+                // Never let one bad post kill the poll loop — the timer would not re-arm.
+                console.error(`[scrape] @${c.username} poll:`, (e as Error).message);
             }
+            // Stagger so we never fire four requests at the same instant.
+            await sleep(400 + Math.random() * 400);
+        }
+    }
+
+    private schedule(onMessage: (m: IncomingMessage) => Promise<void>): void {
+        // Jitter so we never settle into a perfectly regular request pattern.
+        this.timer = setTimeout(async () => {
+            await this.pollAll(onMessage);
             if (!this.stopped) this.schedule(onMessage);
-            // Jitter so we never settle into a perfectly regular request pattern.
         }, INTERVAL_SEC * 1000 * (0.85 + Math.random() * 0.3));
     }
 
@@ -81,7 +125,6 @@ export class ScrapeSource implements MessageSource {
         username: string,
         label: string,
         onMessage: (m: IncomingMessage) => Promise<void>,
-        baseline: boolean,
     ): Promise<void> {
         const until = this.backoff.get(username) ?? 0;
         if (Date.now() < until) return;
@@ -118,41 +161,36 @@ export class ScrapeSource implements MessageSource {
                 `[scrape] @${username} ${status ?? (e as Error).message} ` +
                     `(fail ${n}) — retrying in ${Math.round(wait / 60_000)}m`,
             );
+            // Diagnostics make extra requests; never let them hold up the other channels.
             // The cause of these 302s is still unknown — record what Telegram said.
             if (status === 302) {
                 const lastId = this.lastId.get(username) ?? 0;
-                console.error(await diagnose302(username, response?.headers ?? {}, this.lastOkAt.get(username), lastId));
+                void diagnose302(username, response?.headers ?? {}, this.lastOkAt.get(username), lastId).then(console.error);
             }
 
             // Only after a sustained outage is it worth naming a cause.
-            if (n === SUSTAINED_FAILURES) markUnavailable(username, await classifyUnavailable(username));
+            if (n === SUSTAINED_FAILURES) {
+                void classifyUnavailable(username).then((r) => markUnavailable(username, r));
+            }
             return;
         }
 
         const prev = this.lastId.get(username) ?? 0;
-        let maxId = prev;
+        const maxId = Math.max(prev, ...posts.map((p) => p.id));
 
-        for (const p of posts) {
-            maxId = Math.max(maxId, p.id);
-            const key = `${username}:${p.id}`;
-            const before = this.seenText.get(key);
-            this.seenText.set(key, p.text);
-
-            if (baseline) continue;
-            const isNew = p.id > prev;
-            const isEdit = before !== undefined && before !== p.text;
-            if (!isNew && !isEdit) continue;
-
-            await onMessage({
-                channelUsername: username,
-                channelTitle: label,
-                messageId: p.id,
-                text: p.text,
-                // An edit has no separate timestamp here, so treat it as now —
-                // otherwise the freshness cutoff would drop a live edit.
-                date: isEdit ? new Date() : p.date,
-                isEdit,
-            });
+        for (const p of postsToEmit(username, posts, prev, this.seenText, Date.now(), env.freshnessMin * 60_000)) {
+            try {
+                await onMessage({
+                    channelUsername: username,
+                    channelTitle: label,
+                    messageId: p.id,
+                    text: p.text,
+                    date: p.date,
+                    isEdit: p.isEdit,
+                });
+            } catch (e) {
+                console.error(`[scrape] @${username}/${p.id} handler:`, (e as Error).message);
+            }
         }
 
         if (maxId > prev) recordPost(username);
