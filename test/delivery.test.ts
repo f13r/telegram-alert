@@ -33,7 +33,6 @@ const dec = (pct: number, loud: boolean, extra: Partial<WindowDecision> = {}): W
     confidencePct: pct,
     loud,
     sourceCount: 1,
-    cooldown: false,
     ...extra,
 });
 const msg = {

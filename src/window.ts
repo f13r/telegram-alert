@@ -8,8 +8,6 @@ export interface WindowDecision {
     loud: boolean;
     /** Distinct channels corroborating inside the correlation window. */
     sourceCount: number;
-    /** Held back: the town is in its cooldown after a loud alert. */
-    cooldown: boolean;
 }
 
 const reliabilityOf = (username: string): number =>
@@ -52,5 +50,5 @@ export function recordMatch(state: WindowState, username: string, fast: boolean,
         state.fastSources = {};
     }
 
-    return { confidencePct, loud, sourceCount: names.size, cooldown: inCooldown && !loud };
+    return { confidencePct, loud, sourceCount: names.size };
 }

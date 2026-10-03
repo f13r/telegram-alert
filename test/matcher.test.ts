@@ -37,7 +37,6 @@ test('confidence: the local news channel alone is 50% and silent', () => {
     const d = recordMatch(fresh(), 'vinnitsa_vinnistya', false, 0);
     assert.equal(d.confidencePct, 50);
     assert.ok(!d.loud);
-    assert.ok(!d.cooldown);
 });
 
 test('escalation: 50% then a reliable source crosses to 95% and goes loud', () => {
@@ -55,7 +54,6 @@ test('cooldown: nothing is loud for 15 min after a loud alert', () => {
     for (const [u, m] of [['war_monitor', 2], ['ukraine_pyxx', 8], ['kpszsu', 14.9]] as const) {
         const d = recordMatch(s, u, false, m * MIN);
         assert.ok(!d.loud, `${u} at ${m} min`);
-        assert.ok(d.cooldown);
     }
 });
 

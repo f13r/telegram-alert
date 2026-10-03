@@ -107,7 +107,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
         const d = decisions.get(m.townId);
         if (!d) continue;
         console.log(
-            `[alert] ${d.loud ? 'LOUD  ' : 'silent'} ${d.confidencePct}% ${d.sourceCount} src  ` +
+            `[alert] LOUD   ${d.confidencePct}% ${d.sourceCount} src  ` +
                 `${m.townId}  @${msg.channelUsername}  «${m.form}»`,
         );
     }
