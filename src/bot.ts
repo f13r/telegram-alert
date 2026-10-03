@@ -1,7 +1,7 @@
 import { Telegraf } from 'telegraf';
 import { channelsConfig, env, townById, towns } from './config.js';
-import { isDanger } from './danger.js';
-import { matchTowns } from './matcher.js';
+import { fastTowns, isThreatReport } from './danger.js';
+import { scanTowns } from './matcher.js';
 import {
     addSubscriber,
     followedTowns,
@@ -49,6 +49,33 @@ export function onTownTap(chatId: number, townId: string): { answer: string; cha
     if (!town) return { answer: 'Місто більше не відстежується', changed: false };
     const on = toggleTown(chatId, townId);
     return { answer: `${town.name} ${on ? 'увімкнено' : 'вимкнено'}`, changed: true };
+}
+
+/**
+ * /test: what the pipeline would do with this text if each channel posted it as
+ * the first post about the town — the same rules as pipeline.ts, so it never
+ * promises an alert that would not come.
+ */
+export function testReport(text: string): string {
+    const { matches, landmarkOnly } = scanTowns(text);
+    const threshold = channelsConfig.loudThresholdPct;
+    const lines = matches.map((m) => `✓ ${townById.get(m.townId)!.name}: <code>${escapeHtml(m.form)}</code>`);
+    for (const id of landmarkOnly) lines.push(`✗ ${townById.get(id)!.name}: лише як орієнтир («східніше…»)`);
+    if (lines.length === 0) lines.push('✗ жодного міста');
+    if (matches.length === 0) return [...lines, '', '<i>не надішле сповіщення</i>'].join('\n');
+
+    if (fastTowns(text, matches.map((m) => m.townId)).length) lines.push('🚀 ракета/КАБ — пройде й під час 15-хв паузи');
+    lines.push('', '<i>якщо це перший допис про місто:</i>');
+    for (const c of channelsConfig.channels) {
+        const verdict =
+            c.requiresThreat && !isThreatReport(text)
+                ? '✗ не загроза (немає ключового слова, або довгий допис/новина)'
+                : c.reliability * 100 >= threshold
+                  ? '✓ одразу'
+                  : `✗ лише з підтвердженням іншого каналу (${Math.round(c.reliability * 100)}%)`;
+        lines.push(`${escapeHtml(c.label)}: ${verdict}`);
+    }
+    return lines.join('\n');
 }
 
 export function buildBot(sourceName: string): Telegraf {
@@ -137,19 +164,7 @@ export function buildBot(sourceName: string): Telegraf {
         const text = ctx.message.text.replace(/^\/test(@\S+)?\s*/, '');
         if (!text) return ctx.reply('Використання: /test <текст повідомлення>');
 
-        const matches = matchTowns(text);
-        const danger = isDanger(text);
-        const hit = matches.length > 0;
-        await ctx.replyWithHTML(
-            [
-                ...(hit
-                    ? matches.map((m) => `✓ ${townById.get(m.townId)!.name}: <code>${escapeHtml(m.form)}</code>`)
-                    : ['✗ жодного міста']),
-                `${danger ? '✓' : '✗'} ключове слово загрози`,
-                '',
-                `<i>надішле сповіщення: ${hit && danger ? 'так, з будь-якого каналу' : hit ? 'лише з каналів без фільтра загрози' : 'ні'}</i>`,
-            ].join('\n'),
-        );
+        await ctx.replyWithHTML(testReport(text));
     });
 
     return bot;

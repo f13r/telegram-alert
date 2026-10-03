@@ -56,3 +56,28 @@ test('a failing handler is logged, never rethrown — a rethrow stops polling an
         },
     } as Parameters<typeof bot.handleUpdate>[0]);
 });
+
+const { testReport } = await import('../src/bot.js');
+
+test('/test: Типова alone is shown as needing confirmation, not as an alert', () => {
+    const r = testReport('БпЛА на Козятин');
+    assert.match(r, /✓ Козятин/);
+    assert.match(r, /ПС ЗСУ.*одразу/);
+    assert.match(r, /Типова Вінниця.*лише з підтвердженням/);
+    assert.doesNotMatch(r, /з будь-якого каналу/);
+});
+
+test('/test: a news article is ignored on Типова even with threat words', () => {
+    const r = testReport('Як працюють лікарні Вінниці під час тривог\n\nПід час атаки дронів — в укриття.');
+    assert.match(r, /Типова Вінниця.*не загроза/);
+});
+
+test('/test: a landmark-only mention says why nothing is sent', () => {
+    const r = testReport('1х реактивний східніше Вінниці на Погребище');
+    assert.match(r, /орієнтир/);
+    assert.match(r, /не надішле/);
+});
+
+test('/test: a missile is flagged as passing a cooldown', () => {
+    assert.match(testReport('2х крилаті ракети курсом на Вінницю'), /ракета\/КАБ/);
+});
