@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ta-bot-'));
-const { citiesKeyboard, onTownTap } = await import('../src/bot.js');
+const { buildBot, citiesKeyboard, onTownTap } = await import('../src/bot.js');
 const { addSubscriber, getSubscriber, toggleTown } = await import('../src/storage.js');
 
 const rows = (chatId: number) =>
@@ -37,4 +37,22 @@ test('tap: a town removed from the catalogue answers instead of throwing', () =>
 
 test('tap: a non-subscriber is told so', () => {
     assert.deepEqual(onTownTap(42, 'ladyzhyn'), { answer: 'Ви не підписані.', changed: false });
+});
+
+test('a failing handler is logged, never rethrown — a rethrow stops polling and kills the process', async () => {
+    const bot = buildBot('scrape');
+    bot.botInfo = { id: 1, is_bot: true, first_name: 'b', username: 'b' } as typeof bot.botInfo;
+    bot.telegram.callApi = (async () => {
+        throw Object.assign(new Error('400: Bad Request: query is too old'), { response: { error_code: 400 } });
+    }) as typeof bot.telegram.callApi;
+    await bot.handleUpdate({
+        update_id: 1,
+        callback_query: {
+            id: 'q',
+            chat_instance: 'c',
+            data: 'town:ladyzhyn',
+            from: { id: 5, is_bot: false, first_name: 'x' },
+            message: { message_id: 1, date: 0, chat: { id: 5, type: 'private', first_name: 'x' } },
+        },
+    } as Parameters<typeof bot.handleUpdate>[0]);
 });

@@ -62,9 +62,15 @@ async function main(): Promise<void> {
         ).catch((e) => console.error('[notify]', (e as Error).message));
     };
 
-    if (!dryRun) {
-        void bot.launch(() => console.log('[bot] polling'));
-    }
+    // Commands only — alerts are sent directly and work even while polling is down.
+    // launch() rejects when getMe fails (network down at boot); retry, never crash.
+    const launch = (): void => {
+        bot.launch(() => console.log('[bot] polling')).catch((e) => {
+            console.error('[bot] polling stopped:', (e as Error).message, '— retrying in 30s');
+            setTimeout(launch, 30_000);
+        });
+    };
+    if (!dryRun) launch();
 
     rotate();
     cron.schedule('17 4 * * *', rotate, { timezone: 'Europe/Kyiv' });

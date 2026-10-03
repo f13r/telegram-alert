@@ -54,6 +54,11 @@ export function onTownTap(chatId: number, townId: string): { answer: string; cha
 export function buildBot(sourceName: string): Telegraf {
     const bot = new Telegraf(env.botToken);
 
+    // Telegraf's default rethrows, which stops polling and — via the discarded
+    // launch() promise — kills the whole process, scraper included. A tap on a
+    // stale /cities button («query is too old») was enough.
+    bot.catch((e, ctx) => console.error(`[bot] update ${ctx.update.update_id}:`, (e as Error).message));
+
     bot.telegram
         .setMyCommands([
             { command: 'cities', description: 'Обрати міста' },
