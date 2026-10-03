@@ -15,9 +15,6 @@ function num(name: string, fallback: number): number {
 }
 
 export const env = {
-    apiId: Number(process.env.TG_API_ID),
-    apiHash: process.env.TG_API_HASH ?? '',
-    session: process.env.TG_SESSION ?? '',
     botToken: process.env.BOT_TOKEN ?? '',
     joinSecret: process.env.JOIN_SECRET ?? '',
     dataDir: process.env.DATA_DIR ?? './data',
@@ -25,8 +22,8 @@ export const env = {
     cooldownMin: num('COOLDOWN_MIN', 15),
     freshnessMin: num('FRESHNESS_MIN', 10),
     shadowRetentionDays: num('SHADOW_RETENTION_DAYS', 7),
-    /** mtproto (needs TG_SESSION) | scrape (no credentials) | fake (testing) */
-    source: process.env.SOURCE ?? (process.env.TG_SESSION ? 'mtproto' : 'scrape'),
+    /** scrape (t.me/s preview pages) | fake (replays fixtures, for testing) */
+    source: process.env.SOURCE ?? 'scrape',
 };
 
 export interface Vocabulary {

@@ -13,15 +13,15 @@ subscriber chooses which of those towns they get (`/cities`).
 ## 1. Architecture
 
 ```
-  monitored channels (you are subscribed in your own TG app)
+  monitored channels (public)
             │
-            │  UpdateNewChannelMessage / UpdateEditChannelMessage
+            │  https://t.me/s/<channel>, polled every ~20 s
             ▼
   ┌──────────────────────┐
-  │ GramJS user client   │   READ ONLY — 0 outbound calls after boot
-  │ (MTProto, session)   │
+  │ scraper              │   no Telegram account, no credentials
+  │ (src/sources/scrape) │   new posts + edits, 302 → backoff
   └──────────┬───────────┘
-             │ raw text | caption
+             │ post text
              ▼
   ┌──────────────────────┐
   │ normalize            │  NFC, strip stress/invisibles, latin→cyrillic homoglyphs
@@ -41,16 +41,17 @@ subscriber chooses which of those towns they get (`/cities`).
   └──────────────────────┘
 ```
 
-**Why split read/write across two identities:** the user account never calls a single
-write method. Its entire footprint is `connect` + N× `resolveUsername` at first boot.
-That is the lowest-risk profile available for an account you cannot afford to lose.
+**Why a scraper and no user account:** reading needs no login, so no personal Telegram
+account is ever at risk. The only identity is the bot, which only writes. A user-account
+(MTProto) reader was built first and removed on 2026-10-03: Telegram never delivered its
+login code, so it never ran. The cost is latency — roughly 15–60 s instead of ~1 s.
 
 ## 2. Decisions
 
 | Area | Decision |
 |---|---|
-| Ingestion | GramJS MTProto user client, passive listener |
-| Channel access | You join manually in your TG app; bot holds an allowlist, never joins |
+| Ingestion | Polls public `t.me/s/<channel>` preview pages; no Telegram account |
+| Channel access | Public channels only, allowlist in `config/channels.json`; nothing to join |
 | Match scope | **Town only**, curated catalogue in `config/towns/`. Oblast / raion / Вінниччина deliberately excluded |
 | Town choice | Per subscriber, toggle buttons via `/cities`; every town on by default |
 | Danger filter | Threat-keyword requirement, **mixed-content channels only** |
@@ -211,8 +212,8 @@ from fresh posts only.
 | `@war_monitor` | air-threat tracking | 0.9 | no |
 | `@vinnitsa_vinnistya` | **general local news** | 0.5 | **yes** + footer stripping |
 
-You must be subscribed to all four in your own Telegram app. Mute and archive them —
-muting does not affect MTProto update delivery.
+All four are public and read through their `t.me/s/` pages — no subscription needed. A
+channel without a web preview (`webPreview: false`) cannot be read at all.
 
 ## 4. Threat window
 
@@ -290,7 +291,7 @@ telegram-alert/
 │   └── threat-fast.json    missiles + КАБ: pass a cooldown
 ├── src/
 │   ├── index.ts            wiring
-│   ├── mtproto.ts          GramJS client, reconnect, event handlers
+│   ├── sources/scrape.ts   t.me/s poller, edits, backoff, 302 diagnostics
 │   ├── matcher.ts          normalize + compile vocabulary → regex
 │   ├── window.ts           per-town cooldown + confidence accumulation
 │   ├── danger.ts           threat-keyword filter (mixed channels only) + fast-threat test
@@ -298,21 +299,18 @@ telegram-alert/
 │   ├── storage.ts          data.json (subscribers, window, alertedIds)
 │   ├── shadow.ts           NDJSON log, 7-day rotation
 │   └── types.ts
-├── scripts/login.ts        one-off: phone + code → prints TG_SESSION
+├── scripts/scrapecheck.ts  checks every channel's page still parses
 ├── test/towns.test.ts     runs every config/towns/*.json fixture set
 ├── test/matcher.test.ts   threat-keywords fixtures, window, footer
 └── DESIGN.md
 ```
 
 Stack mirrors `telegram-lybohora`: TypeScript, ESM, `tsx` for dev, `telegraf`, `dotenv`.
-Adds `telegram` (GramJS). `node-cron` only for shadow-log rotation.
+Adds `axios` + `cheerio` for the scraper. `node-cron` only for shadow-log rotation.
 
 ## 8. Environment
 
 ```
-TG_API_ID=          # my.telegram.org
-TG_API_HASH=        # my.telegram.org
-TG_SESSION=         # from `npm run login`, run ONCE
 BOT_TOKEN=          # @BotFather
 JOIN_SECRET=        # deep-link payload for /start
 DATA_DIR=./data
@@ -321,16 +319,16 @@ FRESHNESS_MIN=10
 SHADOW_RETENTION_DAYS=7
 ```
 
-`.env` is gitignored. `TG_SESSION` is as sensitive as your Telegram password — it grants
-full account access with no second factor. Also keep a copy off the SD card: losing it
-means a fresh phone login, and repeated logins are the thing we are avoiding.
+`.env` is gitignored. `BOT_TOKEN` lets anyone send as the bot — never commit or paste it.
 
 ## 9. Resilience on a Pi
 
 - `systemd` unit, `Restart=always`, `RestartSec=10`, `WantedBy=multi-user.target`
   (survives power return unattended)
-- GramJS `autoReconnect`, `retries: Infinity` — home internet flaps are expected
-- `FLOOD_WAIT_x` → sleep x + jitter, never retry-storm
+- Scraper: a failed or throttled channel (302) backs off exponentially, capped at
+  30 min, and is retried forever — home internet flaps and t.me throttling are expected
+- On start the first poll still alerts on posts younger than `FRESHNESS_MIN`, so a
+  threat posted during a restart is not lost
 - Shadow log rotated daily, 7 days retained — bounded SD-card writes
 - Consider: UPS on the Pi + router, and an LTE fallback. Without power the bot is dark
   and, per the decision above, nothing will tell you.

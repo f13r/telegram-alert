@@ -4,13 +4,10 @@
   "description": "Town air-threat alerts (Вінниця, Ладижин, Козятин) from Telegram monitoring channels",
   "type": "module",
   "scripts": {
-    "login": "tsx scripts/login.ts",
-    "channels": "tsx scripts/channels.ts",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "node --import tsx --test test/*.test.ts",
-    "sendcode": "tsx scripts/sendcode.ts",
     "scrapecheck": "tsx scripts/scrapecheck.ts",
     "prestart": "npm run build"
   },
@@ -20,8 +17,7 @@
     "cheerio": "^1.2.0",
     "dotenv": "^17.2.3",
     "node-cron": "^4.2.1",
-    "telegraf": "^4.16.3",
-    "telegram": "^2.26.22"
+    "telegraf": "^4.16.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

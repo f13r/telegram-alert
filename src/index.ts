@@ -6,7 +6,6 @@ import { acquireLock } from './lock.js';
 import { handleMessage } from './pipeline.js';
 import { rotate } from './shadow.js';
 import { FakeSource } from './sources/fake.js';
-import { MtprotoSource } from './sources/mtproto.js';
 import { ScrapeSource } from './sources/scrape.js';
 import { followedTowns, getSubscribers } from './storage.js';
 import { checkWatchdog, initWatchdog } from './watchdog.js';
@@ -16,12 +15,7 @@ import type { WindowDecision } from './window.js';
 const dryRun = process.env.DRY_RUN === '1';
 
 function pickSource(): MessageSource {
-    if (env.source === 'scrape') return new ScrapeSource();
-    if (env.source === 'mtproto') {
-        if (!env.session) throw new Error('SOURCE=mtproto but TG_SESSION is empty. Run `npm run login`.');
-        return new MtprotoSource();
-    }
-    return new FakeSource();
+    return env.source === 'fake' ? new FakeSource() : new ScrapeSource();
 }
 
 async function main(): Promise<void> {

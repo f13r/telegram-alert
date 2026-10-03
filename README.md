@@ -20,30 +20,18 @@ npm start                     # runs on the scraper, no Telegram credentials nee
 
 ### Ingestion sources
 
-`SOURCE` picks one; it defaults to `mtproto` when `TG_SESSION` is set, else `scrape`.
+`SOURCE` picks one; the default is `scrape`.
 
 | Source | Latency | Needs | Notes |
 |---|---|---|---|
-| `scrape` | ~15–30s | nothing | polls `t.me/s/<channel>`; current default |
-| `mtproto` | ~1s | `TG_SESSION` | push updates; read-only user account |
+| `scrape` | ~15–60s | nothing | polls public `t.me/s/<channel>` pages |
 | `fake` | — | nothing | replay fixtures or type messages by hand |
-
-To switch to MTProto once a working `api_id` exists:
-
-```bash
-npm run login                 # ONCE — writes TG_SESSION into .env
-npm run channels              # verifies the account is subscribed to all four
-npm start                     # auto-switches to mtproto
-```
 
 Check the scraper still parses (its main failure mode is silent markup drift):
 
 ```bash
 npm run scrapecheck
 ```
-
-Subscribe to the four channels in your own Telegram app first, then **mute and archive
-them** — muting does not affect MTProto delivery, so the bot still sees every post.
 
 ## Running without Telegram
 

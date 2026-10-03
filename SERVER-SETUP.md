@@ -210,8 +210,7 @@ Anything real in that output is a phrasing to add to that town's file in `config
 
 - **One instance anywhere.** Never run `npm start` here while the service is active, and
   never while the Mac copy is running.
-- **Never print, commit or paste `.env`, `TG_SESSION`, `BOT_TOKEN` or `JOIN_SECRET`.**
-  `TG_SESSION` grants full access to a Telegram *user account* with no second factor.
+- **Never print, commit or paste `.env`, `BOT_TOKEN` or `JOIN_SECRET`.**
 - **Do not widen the matching rules on your own.** City-only is a deliberate decision by
   the owner: oblast forms (`Вінниччина`, `Вінницька область`) are excluded on purpose,
   and the exclusion is structural, not a blocklist. See `DESIGN.md` §2–3.
@@ -226,11 +225,8 @@ Anything real in that output is a phrasing to add to that town's file in `config
 
 ## 8. Known state, as of this handoff
 
-- MTProto ingestion is **blocked**: Telegram refuses to deliver login codes for newly
-  created `api_id`s on this owner's accounts (three different apps, two accounts, two
-  days, identical `SentCodeTypeApp`-with-no-delivery). The bot therefore runs on
-  `SOURCE=scrape`. If a working `api_id` ever appears, `npm run login` writes
-  `TG_SESSION` and the source switches automatically — no other change.
+- Ingestion is the t.me/s scraper only. The MTProto (user-account) source was removed
+  on 2026-10-03: Telegram never delivered its login code, so it never ran.
 - `@war_monitor` is intermittently offline by its own admission («Тимчасово офлайн»).
   That is normal and not a fault; the confidence model simply scores lower without it.
-- Latency on the scraper is roughly 15–30s versus ~1s for MTProto.
+- Latency on the scraper is roughly 15–60s from post to alert.

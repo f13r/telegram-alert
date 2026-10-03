@@ -70,9 +70,7 @@ export function postsToEmit(
 /**
  * Credential-free ingestion: polls the public t.me/s/<channel> preview pages.
  *
- * Slower than MTProto — poll interval plus Telegram's edge caching put real
- * latency at roughly 15–60s instead of ~1s. Everything downstream is identical,
- * so swapping back to MTProto later changes nothing but SOURCE.
+ * Poll interval plus Telegram's edge caching put real latency at roughly 15–60s.
  */
 export class ScrapeSource implements MessageSource {
     readonly name = 'scrape';
@@ -89,7 +87,7 @@ export class ScrapeSource implements MessageSource {
         this.usable = channelsConfig.channels.filter((c) => c.webPreview !== false);
         for (const c of channelsConfig.channels) {
             if (c.webPreview === false) {
-                console.warn(`[scrape] @${c.username} has no public t.me/s page — skipped (MTProto could read it)`);
+                console.warn(`[scrape] @${c.username} has no public t.me/s page — skipped`);
             }
         }
         // No silent baseline pass: the first poll alerts on posts that are still

@@ -11,9 +11,8 @@ export interface IncomingMessage {
 }
 
 /**
- * Every ingestion source implements this. MTProto is the primary one; `fake`
- * replays fixtures for testing; a t.me/s scraper can be added without any
- * other file changing.
+ * Every ingestion source implements this: the t.me/s scraper in production,
+ * `fake` to replay fixtures in testing.
  */
 export interface MessageSource {
     readonly name: string;
@@ -31,7 +30,7 @@ export interface ChannelCfg {
     /** Require a danger keyword too — for channels that publish other content. */
     requiresThreat: boolean;
     stripFooterPatterns: string[];
-    /** false = no public t.me/s page; only MTProto can read it. */
+    /** false = the channel has no public t.me/s page, so it cannot be read. */
     webPreview?: boolean;
 }
 
