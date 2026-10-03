@@ -51,13 +51,13 @@ async function main(): Promise<void> {
         decisions: Map<string, WindowDecision>,
         render: (towns: string[]) => string,
     ): Promise<void> => {
+        // Every delivered town is loud: pipeline.ts drops the rest before calling this.
         const matched = [...decisions.keys()];
-        const silentFor = (towns: string[]) => !towns.some((t) => decisions.get(t)!.loud);
-        if (dryRun || getSubscribers().length === 0) return print(render(matched), silentFor(matched));
+        if (dryRun || getSubscribers().length === 0) return print(render(matched), false);
         // Not awaited: retries can take ~20 s and must not hold up the next post.
         void Promise.all(
             groupByTowns(getSubscribers(), matched, followedTowns).map((g) =>
-                sendTo(bot, g.chatIds, render(g.towns), silentFor(g.towns)),
+                sendTo(bot, g.chatIds, render(g.towns), false),
             ),
         ).catch((e) => console.error('[notify]', (e as Error).message));
     };

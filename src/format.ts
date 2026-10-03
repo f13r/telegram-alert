@@ -1,4 +1,4 @@
-import { channelsConfig, type TownCfg } from './config.js';
+import type { TownCfg } from './config.js';
 import { escapeHtml } from './text.js';
 import type { IncomingMessage } from './types.js';
 import type { WindowDecision } from './window.js';
@@ -35,34 +35,22 @@ export interface ShownTown {
 }
 
 /**
- * One alert for one post, listing only the towns this recipient follows.
+ * One alert for one post, listing only the towns this recipient follows. Only
+ * confirmed (loud) towns ever reach here — see pipeline.ts.
  * A single town keeps the original layout: confidence in the header, corroboration
  * in the footer. Several towns put each town's confidence in the header instead.
  */
 export function formatAlert(msg: IncomingMessage, text: string, label: string, shown: ShownTown[]): string {
-    const threshold = channelsConfig.loudThresholdPct;
-    const icon = shown.some((s) => s.d.loud) ? '🚨' : '•';
     const link = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
 
     let header: string;
     let confidence = '';
     if (shown.length === 1) {
         const { town, d } = shown[0];
-        header = `${icon} <b>${town.header}</b> · ${d.confidencePct}%`;
-        if (d.confidencePct < threshold) {
-            confidence = ' · непідтверджено';
-        } else if (d.sourceCount > 1) {
-            confidence = ` · підтверджено (${d.sourceCount} ${sourcesWord(d.sourceCount)})`;
-        }
+        header = `🚨 <b>${town.header}</b> · ${d.confidencePct}%`;
+        if (d.sourceCount > 1) confidence = ` · підтверджено (${d.sourceCount} ${sourcesWord(d.sourceCount)})`;
     } else {
-        header =
-            `${icon} ` +
-            shown
-                .map(({ town, d }) =>
-                    `<b>${town.header}</b> ${d.confidencePct}%` +
-                    (d.confidencePct < threshold ? ' (непідтверджено)' : ''),
-                )
-                .join(' · ');
+        header = '🚨 ' + shown.map(({ town, d }) => `<b>${town.header}</b> ${d.confidencePct}%`).join(' · ');
     }
 
     return [

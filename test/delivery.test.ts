@@ -56,24 +56,13 @@ test('format: single Вінниця alert unchanged', () => {
     );
 });
 
-test('format: single town below threshold says непідтверджено', () => {
-    const html = formatAlert(msg, 'т', 'x', [{ town: townById.get('ladyzhyn')!, d: dec(50, false) }]);
-    assert.equal(html.split('\n')[0], '• <b>ЛАДИЖИН</b> · 50%');
-    assert.match(html, /· непідтверджено ·/);
-});
-
-test('format: two towns in one header, loud if any is loud', () => {
+test('format: two towns in one header, each with its confidence', () => {
     const html = formatAlert(msg, 'т', 'war_monitor', [
-        { town: townById.get('ladyzhyn')!, d: dec(50, false) },
+        { town: townById.get('ladyzhyn')!, d: dec(95, true) },
         { town: townById.get('koziatyn')!, d: dec(90, true) },
     ]);
-    assert.equal(html.split('\n')[0], '🚨 <b>ЛАДИЖИН</b> 50% (непідтверджено) · <b>КОЗЯТИН</b> 90%');
-    assert.doesNotMatch(html.split('\n').at(-1)!, /джерел|непідтверджено/);
-});
-
-test('format: all quiet → bullet icon', () => {
-    const html = formatAlert(msg, 'т', 'x', [{ town: townById.get('koziatyn')!, d: dec(90, false) }]);
-    assert.ok(html.startsWith('• '));
+    assert.equal(html.split('\n')[0], '🚨 <b>ЛАДИЖИН</b> 95% · <b>КОЗЯТИН</b> 90%');
+    assert.doesNotMatch(html.split('\n').at(-1)!, /джерел/);
 });
 
 test('pipeline: two towns → one deliver call; edit alerts only the newly named town', async () => {
