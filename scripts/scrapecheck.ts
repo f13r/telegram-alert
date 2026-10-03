@@ -4,25 +4,14 @@
  * Silent markup drift is this source's main failure mode, so check it after any
  * unexplained quiet period.
  */
-import axios from 'axios';
 import { channelsConfig, townById } from '../src/config.js';
 import { matchTowns } from '../src/matcher.js';
-import { classifyUnavailable, parse } from '../src/sources/scrape.js';
-
-const UA =
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
-    '(KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
+import { classifyUnavailable, fetchPreview, parse } from '../src/sources/scrape.js';
 
 async function main(): Promise<void> {
     for (const c of channelsConfig.channels) {
         try {
-            const { data } = await axios.get<string>(`https://t.me/s/${c.username}`, {
-                timeout: 15_000,
-                headers: { 'User-Agent': UA, 'Accept-Language': 'uk,en;q=0.8' },
-                maxRedirects: 0,
-                validateStatus: (s) => s === 200,
-            });
-            const posts = parse(data, c.username);
+            const posts = parse(await fetchPreview(c.username), c.username);
             const newest = posts.at(-1);
             const ageMin = newest ? Math.round((Date.now() - newest.date.getTime()) / 60_000) : NaN;
             const counts = new Map<string, number>();

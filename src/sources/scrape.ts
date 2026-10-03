@@ -143,15 +143,7 @@ export class ScrapeSource implements MessageSource {
 
         let posts: Post[];
         try {
-            const { data } = await axios.get<string>(`https://t.me/s/${username}`, {
-                timeout: 12_000,
-                headers: { 'User-Agent': UA, 'Accept-Language': 'uk,en;q=0.8' },
-                // A 302 to /<channel> means the preview was switched off. Following
-                // it would yield a post-less page and look like a parser bug.
-                maxRedirects: 0,
-                validateStatus: (s) => s === 200,
-            });
-            posts = parse(data, username);
+            posts = parse(await fetchPreview(username), username);
             this.backoff.delete(username);
             this.failures.delete(username);
             this.lastOkAt.set(username, Date.now());
@@ -256,6 +248,22 @@ export async function diagnose302(
     }
     const ok = lastOkAt === undefined ? 'lastOk=never' : `lastOk=${ago(Date.now() - lastOkAt)}`;
     return `[scrape:302] @${username} ${hdr || 'no-headers'} ${ok} ${before}`;
+}
+
+/**
+ * The channel's t.me/s preview page. Throws on anything but a 200 — scrapecheck
+ * uses this too, so it requests exactly what the scraper does.
+ */
+export async function fetchPreview(username: string): Promise<string> {
+    const { data } = await axios.get<string>(`https://t.me/s/${username}`, {
+        timeout: 12_000,
+        headers: { 'User-Agent': UA, 'Accept-Language': 'uk,en;q=0.8' },
+        // A 302 to /<channel> means the preview was switched off. Following
+        // it would yield a post-less page and look like a parser bug.
+        maxRedirects: 0,
+        validateStatus: (s) => s === 200,
+    });
+    return data;
 }
 
 /**
