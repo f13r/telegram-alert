@@ -1,0 +1,48 @@
+{
+  "_about": "Fast threats: missiles and guided bombs (КАБ) reach a town within minutes, so a confirmed post with one of these words is LOUD even while the town is in its cooldown. Matched on the normalized text of EVERY channel, word-boundary anchored like threat-keywords.json. Drones (шахед, реактивний БпЛА) are deliberately NOT here — they are slow, and the cooldown is meant for them.",
+  "stems": [
+    "ракет",
+    "баліст",
+    "баллист",
+    "крилат",
+    "крылат",
+    "калібр",
+    "калибр",
+    "кинджал",
+    "кинжал",
+    "іскандер",
+    "искандер",
+    "циркон",
+    "онікс",
+    "оникс",
+    "авіабомб",
+    "авиабомб"
+  ],
+  "exact": [
+    "каб",
+    "кр",
+    "х-101",
+    "х-22",
+    "х-59",
+    "х-69"
+  ],
+  "fixtures": {
+    "danger": [
+      "Швидкісна ціль! Ракета курсом на Вінницю",
+      "Загроза балістики для Вінниччини",
+      "КАБ на Ладижин",
+      "Крилаті ракети в напрямку Козятина",
+      "КР курсом на Вінницю",
+      "Пуск Х-101 з Ту-95, напрямок Вінниця",
+      "Кинджал, Вінниця — в укриття"
+    ],
+    "notDanger": [
+      "Реактивний БпЛА в напрямку Ладижина",
+      "Вінниччина:\n1х реактивний БпЛА курсом на Ладижин.",
+      "2 Шахеди на Вінницю",
+      "БпЛА курсом на Козятин",
+      "У Вінниці відремонтували кабінет стоматолога",
+      "Вибухи у Вінниці"
+    ]
+  }
+}

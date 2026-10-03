@@ -1,0 +1,151 @@
+import { Telegraf } from 'telegraf';
+import { channelsConfig, env, townById, towns } from './config.js';
+import { isDanger } from './danger.js';
+import { matchTowns } from './matcher.js';
+import {
+    addSubscriber,
+    followedTowns,
+    getSubscriber,
+    getSubscribers,
+    getTownWindow,
+    removeSubscriber,
+    toggleTown,
+} from './storage.js';
+import { escapeHtml } from './text.js';
+import type { Subscriber } from './types.js';
+import { healthReport } from './watchdog.js';
+
+const startedAt = Date.now();
+
+function uptime(): string {
+    const s = Math.floor((Date.now() - startedAt) / 1000);
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return [d && `${d}д`, h && `${h}год`, `${m}хв`].filter(Boolean).join(' ');
+}
+
+const kyiv = (ms: number) => new Date(ms).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' });
+
+/** The /cities message: one button per town, tap to toggle. */
+export function citiesKeyboard(sub: Subscriber) {
+    const on = new Set(followedTowns(sub));
+    const text =
+        'Міста для сповіщень — натисніть, щоб увімкнути або вимкнути:' +
+        (on.size === 0 ? '\n\n⚠️ Ви не відстежуєте жодного міста — сповіщень не буде.' : '');
+    return {
+        text,
+        reply_markup: {
+            inline_keyboard: towns.map((t) => [
+                { text: `${on.has(t.id) ? '✅' : '⬜'} ${t.name}`, callback_data: `town:${t.id}` },
+            ]),
+        },
+    };
+}
+
+/** A tap on a /cities button. `changed` = the keyboard needs redrawing. */
+export function onTownTap(chatId: number, townId: string): { answer: string; changed: boolean } {
+    if (!getSubscriber(chatId)) return { answer: 'Ви не підписані.', changed: false };
+    const town = townById.get(townId);
+    // A button from an old /cities message can outlive its town's config file.
+    if (!town) return { answer: 'Місто більше не відстежується', changed: false };
+    const on = toggleTown(chatId, townId);
+    return { answer: `${town.name} ${on ? 'увімкнено' : 'вимкнено'}`, changed: true };
+}
+
+export function buildBot(sourceName: string): Telegraf {
+    const bot = new Telegraf(env.botToken);
+
+    bot.telegram
+        .setMyCommands([
+            { command: 'cities', description: 'Обрати міста' },
+            { command: 'status', description: 'Стан бота' },
+            { command: 'test', description: 'Перевірити текст' },
+            { command: 'stop', description: 'Відписатися' },
+        ])
+        .catch((e) => console.warn('[bot] setMyCommands:', (e as Error).message));
+
+    bot.start(async (ctx) => {
+        const payload = (ctx.payload ?? '').trim();
+        if (payload !== env.joinSecret || !env.joinSecret) {
+            return ctx.reply('Це приватний бот. Потрібне запрошення.');
+        }
+        const name = [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ') || ctx.from.username || 'невідомо';
+        const added = addSubscriber(ctx.chat.id, name);
+        await ctx.reply(
+            added
+                ? `✅ Підписано на сповіщення про загрозу для міст: ${towns.map((t) => t.name).join(', ')}.\n\n` +
+                      'Обрати міста: /cities\n\n' +
+                      'Порада: увімкніть для цього чату окремий гучний звук і додайте у винятки «Не турбувати».'
+                : 'Ви вже підписані. Обрати міста: /cities',
+        );
+    });
+
+    bot.command('stop', async (ctx) => {
+        await ctx.reply(removeSubscriber(ctx.chat.id) ? 'Відписано.' : 'Ви не були підписані.');
+    });
+
+    bot.command('cities', async (ctx) => {
+        const sub = getSubscriber(ctx.chat.id);
+        if (!sub) return ctx.reply('Ви не підписані.');
+        const k = citiesKeyboard(sub);
+        await ctx.reply(k.text, { reply_markup: k.reply_markup });
+    });
+
+    bot.action(/^town:(.+)$/, async (ctx) => {
+        const chatId = ctx.chat?.id ?? ctx.from.id;
+        const { answer, changed } = onTownTap(chatId, ctx.match[1]);
+        await ctx.answerCbQuery(answer);
+        const sub = getSubscriber(chatId);
+        if (!changed || !sub) return;
+        const k = citiesKeyboard(sub);
+        await ctx.editMessageText(k.text, { reply_markup: k.reply_markup }).catch(() => {
+            // "message is not modified" after a double tap — harmless.
+        });
+    });
+
+    bot.command('status', async (ctx) => {
+        const cooldownMs = env.cooldownMin * 60_000;
+        const windowLines = towns.map((t) => {
+            const { loudAt } = getTownWindow(t.id);
+            const until = loudAt !== null && Date.now() - loudAt < cooldownMs ? loudAt + cooldownMs : null;
+            const last = loudAt ? kyiv(loudAt) : '—';
+            return `${t.name}: ${until ? `пауза до ${kyiv(until)}` : 'чергує'} · остання тривога ${last}`;
+        });
+        const sub = getSubscriber(ctx.chat.id);
+        const mine = sub ? followedTowns(sub).map((id) => townById.get(id)!.name).join(', ') || 'жодного' : '—';
+        await ctx.replyWithHTML(
+            [
+                `<b>Статус</b>`,
+                `джерело: ${sourceName}`,
+                `канали: ${channelsConfig.channels.length}`,
+                `підписників: ${getSubscribers().length}`,
+                `аптайм: ${uptime()}`,
+                `ваші міста: ${escapeHtml(mine)}`,
+                '',
+                ...windowLines.map(escapeHtml),
+                '',
+                healthReport(),
+            ].join('\n'),
+        );
+    });
+
+    bot.command('test', async (ctx) => {
+        const text = ctx.message.text.replace(/^\/test(@\S+)?\s*/, '');
+        if (!text) return ctx.reply('Використання: /test <текст повідомлення>');
+
+        const matches = matchTowns(text);
+        const danger = isDanger(text);
+        const hit = matches.length > 0;
+        await ctx.replyWithHTML(
+            [
+                ...(hit
+                    ? matches.map((m) => `✓ ${townById.get(m.townId)!.name}: <code>${escapeHtml(m.form)}</code>`)
+                    : ['✗ жодного міста']),
+                `${danger ? '✓' : '✗'} ключове слово загрози`,
+                '',
+                `<i>надішле сповіщення: ${hit && danger ? 'так, з будь-якого каналу' : hit ? 'лише з каналів без фільтра загрози' : 'ні'}</i>`,
+            ].join('\n'),
+        );
+    });
+
+    return bot;
+}

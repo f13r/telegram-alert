@@ -1,0 +1,186 @@
+{
+  "id": "vinnytsia",
+  "name": "Вінниця",
+  "header": "ВІННИЦЯ",
+  "order": 1,
+  "_about": "Town of Вінниця. CITY ONLY — oblast/raion/Вінниччина deliberately excluded.",
+  "_sources": [
+    "https://www.kyivdictionary.com/uk/words/conjugation/?word=%D0%92%D1%96%CC%81%D0%BD%D0%BD%D0%B8%D1%86%D1%8F&lang=uk",
+    "https://uk.wikipedia.org/wiki/%D0%92%D1%96%D0%BD%D0%BD%D0%B8%D1%86%D1%8F",
+    "https://cdp.jewishgen.org/eastern-europe/ukraine/vinnytsya-vinnitsa-vinitza-vinnitza-vinnycja-winnitsa-winniza-vinitse-winnyzja-winnica",
+    "https://slovnyk.ua/index.php?swrd=%D0%B2%D0%B8%D0%BD%D0%BD%D0%B8%D1%86%D1%8F"
+  ],
+  "targets": [
+    {
+      "id": "vinnytsia-city-uk",
+      "label": "Вінниця (українською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "stems": [
+        "вінниц"
+      ],
+      "maxSuffix": 2,
+      "wordBoundary": true,
+      "forms": {
+        "називний": "Вінниця",
+        "родовий": "Вінниці",
+        "давальний": "Вінниці",
+        "знахідний": "Вінницю",
+        "орудний": "Вінницею",
+        "місцевий": "Вінниці",
+        "кличний": "Віннице"
+      },
+      "distinctForms": [
+        "Вінниця",
+        "Вінниці",
+        "Вінницю",
+        "Вінницею",
+        "Віннице"
+      ],
+      "regex": "(?<!\\p{L})вінниц\\p{L}{0,2}(?!\\p{L})"
+    },
+    {
+      "id": "vinnytsia-city-ru",
+      "label": "Винница (російською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "stems": [
+        "винниц"
+      ],
+      "maxSuffix": 2,
+      "wordBoundary": true,
+      "distinctForms": [
+        "Винница",
+        "Винницы",
+        "Виннице",
+        "Винницу",
+        "Винницей",
+        "Винницею"
+      ],
+      "regex": "(?<!\\p{L})винниц\\p{L}{0,2}(?!\\p{L})",
+      "knownCollision": "Ukrainian common noun 'винниця' = distillery/vineyard. Declines identically. Accepted risk: vanishingly unlikely in an air-alert feed."
+    },
+    {
+      "id": "vinnytsia-city-latin",
+      "label": "Vinnytsia (latin / transliterated)",
+      "script": "latin",
+      "matchOn": "raw",
+      "maxSuffix": null,
+      "_note": "No suffix trick possible — English writes the bare city name in 'Vinnytsia Oblast'. Guarded by a negative lookahead instead.",
+      "literals": [
+        "Vinnytsia",
+        "Vinnytsya",
+        "Vinnytsja",
+        "Vinnytsa",
+        "Vinnycja",
+        "Vinnycia",
+        "Vinnitsa",
+        "Vinnitza",
+        "Vinnitsya",
+        "Vinnica",
+        "Vinnicia",
+        "Vinnyzja",
+        "Vinitza",
+        "Vinitse",
+        "Winnica",
+        "Winnitsa",
+        "Winniza",
+        "Winnyzja",
+        "Winnitza"
+      ],
+      "regex": "(?<![\\p{L}])(?:v|w)inn?(?:y|i)(?:ts|tz|c|z)(?:ia|ya|ja|a|ja|e|ia)?(?![\\p{L}])",
+      "regexPreferred": "literal-alternation",
+      "negativeLookahead": "\\s*(?:oblast|oblasts|region|regional|raion|rayon|district|area|province)\\b"
+    }
+  ],
+  "excluded": {
+    "_why": "Scope is CITY ONLY. These all start with the same stem and MUST NOT fire.",
+    "uk_oblast_raion_adjective": [
+      "Вінницька",
+      "Вінницької",
+      "Вінницькій",
+      "Вінницьку",
+      "Вінницькою",
+      "Вінницький",
+      "Вінницького",
+      "Вінницькому",
+      "Вінницьким",
+      "Вінницьке",
+      "Вінницькі",
+      "Вінницьких",
+      "Вінницькими"
+    ],
+    "uk_colloquial_region": [
+      "Вінниччина",
+      "Вінниччини",
+      "Вінниччині",
+      "Вінниччину",
+      "Вінниччиною"
+    ],
+    "ru_oblast_adjective": [
+      "Винницкая",
+      "Винницкой",
+      "Винницкую",
+      "Винницкий",
+      "Винницкого",
+      "Винницкое",
+      "Винницкие"
+    ],
+    "latin_region": [
+      "Vinnytsia Oblast",
+      "Vinnytsia Raion",
+      "Vinnytsia region"
+    ],
+    "other_settlements": [
+      "Вінницькі Хутори",
+      "Вінниківці"
+    ],
+    "_mechanism": "All Cyrillic entries are excluded automatically by maxSuffix=2 + word boundary (they need 3+ trailing letters). Latin entries need the negativeLookahead. No manual blocklist required — this list is a test fixture, not runtime config."
+  },
+  "fixtures": {
+    "shouldMatch": [
+      "Бандероль на Вінницю",
+      "БпЛА курсом на Вінницю",
+      "Вибухи у Вінниці!",
+      "Бандероль на Дніпро/Вінниця",
+      "Група БпЛА над Вінницею",
+      "#Вінниця ⚠️",
+      "Ві́нниця",
+      "ВІННИЦЯ - ЗАГРОЗА",
+      "Вiнниця",
+      "Ракета на Винницу",
+      "взрывы в Виннице",
+      "Shahed drones heading to Vinnytsia",
+      "explosions reported in Vinnitsa",
+      "✈️ Вінниця: реактивний БпЛА в напрямку міста з півдня.",
+      "2 БпЛА на Вінницю",
+      "У Вінниці сьогодні частково не буде води та світла",
+      "Віннѝця",
+      "Вінниччина: 1х реактивний східніше Вінниці на Погребище, далі курс на Вінницю",
+      "Шахед західніше Вінниці, змінив курс на місто — Вінниця, увага"
+    ],
+    "shouldNotMatch": [
+      "Вінницька область ◦ Бандероль 1 од.",
+      "Загроза для Вінниччини",
+      "Далі на Вінниччину",
+      "БпЛА у Вінницькому районі",
+      "Вінницькі Хутори",
+      "Вінниківці",
+      "Винницкая область",
+      "Vinnytsia Oblast under threat",
+      "Vinnytsia Raion",
+      "Полтавська область ◦ Реактивний 1 грп.",
+      "Далі на Чернігівщину",
+      "Реактивний БпЛА у напрямку Гайсина (Вінниччина) з півдня",
+      "БпЛА на сході Вінниччини, курс на північ",
+      "курс на Кіровоградщину/Вінниччину",
+      "На Вінниччині затримали директорку держпідприємства",
+      "Вінниччина:\n1х реактивний східніше Вінниці на Погребище.\n\nПо інших дронах на зараз мінус.",
+      "БпЛА північно-східніше Вінниці, курс на Калинівку",
+      "Ракета на північ від Вінниці, курс на Житомирщину",
+      "Шахед на південний захід від м. Вінниця",
+      "БпЛА восточнее Винницы, курс на север",
+      "Ракета к западу от Винницы"
+    ]
+  }
+}

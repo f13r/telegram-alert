@@ -1,0 +1,34 @@
+[Unit]
+Description=Vinnytsia air-threat alert bot
+Documentation=file:/home/f13r/telegram-alert/DESIGN.md
+After=network-online.target
+Wants=network-online.target
+# Do not give up after repeated fast failures during a flaky boot.
+# (Must live in [Unit]; systemd ignores it under [Service].)
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=f13r
+Group=f13r
+WorkingDirectory=/home/f13r/telegram-alert
+ExecStart=/usr/bin/node dist/index.js
+Environment=NODE_ENV=production
+
+# Come back unattended after a power cut — the whole point of this host.
+Restart=always
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vinnytsia-alert
+
+# Modest hardening: it only needs to read its own directory and write data/.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/f13r/telegram-alert/data
+
+[Install]
+WantedBy=multi-user.target

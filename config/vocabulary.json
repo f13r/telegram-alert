@@ -1,0 +1,53 @@
+{
+  "_about": "Text normalization shared by every town in config/towns/ and by the danger filter. Town vocabularies live in config/towns/<id>.json.",
+  "normalization": {
+    "_note": "Applied to message text BEFORE cyrillic matching. Latin matching runs on the raw (only whitespace/invisible-cleaned) text, because folding latin->cyrillic would destroy 'Vinnytsia'.",
+    "unicodeForm": "NFC",
+    "stripCombining": [
+      "́",
+      "̀"
+    ],
+    "stripInvisible": [
+      "​",
+      "‌",
+      "‍",
+      "﻿",
+      "­"
+    ],
+    "collapseWhitespace": true,
+    "latinToCyrillicHomoglyphs": {
+      "a": "а",
+      "c": "с",
+      "e": "е",
+      "i": "і",
+      "o": "о",
+      "p": "р",
+      "x": "х",
+      "y": "у",
+      "A": "А",
+      "B": "В",
+      "C": "С",
+      "E": "Е",
+      "H": "Н",
+      "I": "І",
+      "K": "К",
+      "M": "М",
+      "O": "О",
+      "P": "Р",
+      "T": "Т",
+      "X": "Х"
+    }
+  },
+  "referencePoint": {
+    "_about": "Phrases that use a town only as a LANDMARK: «східніше Вінниці» means somewhere east of the city, not the city. A town mention directly after one of these does not count. If the town is named nowhere else, the post is dropped (shadow-logged as reference-point). «повз Вінницю» is deliberately NOT here — passing the city is a threat to it.",
+    "_syntax": "Regex fragments, lowercase, matched on normalized text immediately before the town form. Optional «м.»/«міста»/«г.»/«города» between phrase and town is handled in code.",
+    "patterns": [
+      "(?:північно|південно)-?(?:східніше|західніше)",
+      "(?:східніше|західніше|північніше|південніше)",
+      "на (?:північний |південний )?(?:схід|захід|північ|південь)(?:-(?:схід|захід))? від",
+      "(?:северо|юго)-?(?:восточнее|западнее)",
+      "(?:восточнее|западнее|севернее|южнее)",
+      "к (?:северо-|юго-)?(?:востоку|западу|северу|югу) от"
+    ]
+  }
+}

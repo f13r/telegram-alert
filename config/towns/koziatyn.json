@@ -1,0 +1,90 @@
+{
+  "id": "koziatyn",
+  "name": "Козятин",
+  "header": "КОЗЯТИН",
+  "order": 3,
+  "_about": "Town of Козятин (Хмільницький р-н, Вінницька обл.). CITY ONLY. Russian official name: Казатин.",
+  "_sources": [
+    "https://uk.wikipedia.org/wiki/Козятин"
+  ],
+  "_endings": "Masculine -ин town: case endings are ENUMERATED, not stem+\\p{L}{0,2}. Two free letters would reach the plural demonym (-ці), the feminine demonym (-ка) and neighbouring villages named <town>ка. See docs/superpowers/specs/2026-10-01-multi-town-design.md.",
+  "targets": [
+    {
+      "id": "koziatyn-uk",
+      "label": "Козятин (українською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "regex": "(?<!\\p{L})козятин(?:а|у|ом|ові|і|е)?(?!\\p{L})"
+    },
+    {
+      "id": "koziatyn-ru",
+      "label": "Козятин (російською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "regex": "(?<!\\p{L})(?:казатин|козятин)(?:а|у|ом|е)?(?!\\p{L})"
+    },
+    {
+      "id": "koziatyn-latin",
+      "label": "Козятин (latin)",
+      "script": "latin",
+      "matchOn": "raw",
+      "literals": [
+        "Koziatyn",
+        "Kozyatyn",
+        "Kozjatyn",
+        "Kosjatyn",
+        "Kazatin",
+        "Kozyatin",
+        "Koziatin"
+      ],
+      "negativeLookahead": "\\s*(?:oblast|oblasts|region|regional|raion|rayon|district|area|province|hromada|community)\\b"
+    }
+  ],
+  "excluded": {
+    "_why": "Share the stem but are not the town.",
+    "adjective": [
+      "Козятинський",
+      "Козятинського",
+      "Казатинский"
+    ],
+    "colloquial_region": [
+      "Козятинщина",
+      "Козятинщині"
+    ],
+    "demonym": [
+      "козятинці",
+      "козятинець",
+      "козятинка"
+    ],
+    "_acceptedCollision": "Villages also named Козятин exist in Сумська (Охтирка) and Волинська oblasts. Identical spelling, cannot be separated lexically. None seen in a 204-post corpus. Accepted."
+  },
+  "fixtures": {
+    "shouldMatch": [
+      "😱 «Шахед» на критично низькій висоті пролетів над Козятином",
+      "у Козятині",
+      "🛵 Вінниччина - БпЛА в районі Іллінців та Козятина.",
+      "Вінниччина: 1х реактивний шахед в районі Козятину.",
+      "№6302 Жмеринка-Пас. — Козятин-1 — запізнюється",
+      "⚠️ 7х БпЛА з Уманського району у напрямку Погребище Козятин і далі по курсу.",
+      "КОЗЯТИН",
+      "Козя́тин",
+      "на Казатин",
+      "в Казатине",
+      "Kozyatyn",
+      "Koziatyn under attack",
+      "Козятинові загрожує"
+    ],
+    "shouldNotMatch": [
+      "Козятинський район",
+      "Козятинського району",
+      "Козятинщина",
+      "на Козятинщині",
+      "козятинці фіксували підвищений тиск газу",
+      "козятинка",
+      "козятинець",
+      "Казатинский район",
+      "Koziatyn Raion",
+      "Koziatyn district"
+    ]
+  }
+}

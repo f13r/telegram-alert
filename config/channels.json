@@ -1,0 +1,46 @@
+{
+  "_about": "Monitored channels. You must be SUBSCRIBED to each in your own Telegram app (mute + archive them). The bot never joins anything.",
+  "_reliability": "Per-source probability that a town match here means a real threat. Combined across sources as 1 - PROD(1 - r). One reliable source = 90%, all four = 100%, the local news channel alone = 50%.",
+  "_requiresThreat": "true = message must ALSO contain a danger keyword (config/threat-keywords.json). Only for channels that publish non-threat content.",
+  "correlationWindowMin": 20,
+  "loudThresholdPct": 90,
+  "channels": [
+    {
+      "username": "kpszsu",
+      "label": "ПС ЗСУ",
+      "reliability": 0.9,
+      "requiresThreat": false,
+      "stripFooterPatterns": [],
+      "webPreview": true
+    },
+    {
+      "username": "ukraine_pyxx",
+      "label": "ukraine_pyxx",
+      "reliability": 0.9,
+      "requiresThreat": false,
+      "stripFooterPatterns": [],
+      "webPreview": true
+    },
+    {
+      "username": "war_monitor",
+      "label": "war_monitor",
+      "reliability": 0.9,
+      "requiresThreat": false,
+      "stripFooterPatterns": [],
+      "webPreview": true
+    },
+    {
+      "username": "vinnitsa_vinnistya",
+      "label": "Типова Вінниця",
+      "reliability": 0.5,
+      "requiresThreat": true,
+      "stripFooterPatterns": [
+        "Надіслати новину\\s*@\\S+",
+        "👉\\s*ПІДПИСАТИСЯ",
+        "^\\s*ПІДПИСАТИСЯ\\s*$"
+      ],
+      "webPreview": true
+    }
+  ],
+  "_webPreview": "false = channel genuinely publishes no t.me/s page. A transient 302 is NOT this — it recovers on its own, is handled by backoff, and is logged as [scrape:302]."
+}

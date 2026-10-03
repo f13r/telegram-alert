@@ -1,0 +1,92 @@
+{
+  "id": "ladyzhyn",
+  "name": "Ладижин",
+  "header": "ЛАДИЖИН",
+  "order": 2,
+  "_about": "Town of Ладижин (Гайсинський р-н, Вінницька обл.). CITY ONLY.",
+  "_sources": [
+    "https://uk.wikipedia.org/wiki/Ладижин",
+    "https://decentralization.gov.ua/locality/47867"
+  ],
+  "_endings": "Masculine -ин town: case endings are ENUMERATED, not stem+\\p{L}{0,2}. Two free letters would reach the plural demonym (-ці), the feminine demonym (-ка) and neighbouring villages named <town>ка. See docs/superpowers/specs/2026-10-01-multi-town-design.md.",
+  "targets": [
+    {
+      "id": "ladyzhyn-uk",
+      "label": "Ладижин (українською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "regex": "(?<!\\p{L})ладижин(?:а|у|ом|ові|і|е)?(?!\\p{L})"
+    },
+    {
+      "id": "ladyzhyn-ru",
+      "label": "Ладижин (російською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "regex": "(?<!\\p{L})ладыжин(?:а|у|ом|е)?(?!\\p{L})"
+    },
+    {
+      "id": "ladyzhyn-latin",
+      "label": "Ладижин (latin)",
+      "script": "latin",
+      "matchOn": "raw",
+      "literals": [
+        "Ladyzhyn",
+        "Ladyzhin",
+        "Ladyżyn",
+        "Ladyschyn",
+        "Ladyzyn"
+      ],
+      "negativeLookahead": "\\s*(?:oblast|oblasts|region|regional|raion|rayon|district|area|province|hromada|community)\\b"
+    }
+  ],
+  "excluded": {
+    "_why": "Share the stem but are not the town.",
+    "adjective": [
+      "Ладижинська",
+      "Ладижинську",
+      "Ладижинський",
+      "Ладыжинская"
+    ],
+    "demonym": [
+      "ладижинці",
+      "ладижинець",
+      "ладижинка (жін.)"
+    ],
+    "other_settlements": [
+      "Ладижинка (с., Уманський р-н, Черкаська обл.)"
+    ]
+  },
+  "fixtures": {
+    "shouldMatch": [
+      "🚀Група ракет на Вінниччині курс на Ладижин.",
+      "У Ладижині вибухи",
+      "🏍 Реактивний БпЛА у напрямку Ладижина на Вінниччині з південного сходу",
+      "над Ладижином",
+      "Ладижину загрожує",
+      "Близько 4 БпЛА рухаються крізь Вінничину, Гайсин-Ладижин Північно-Західним курсом.",
+      "Загроза ударних БпЛА: Група 1 — Вінницька область, →Гайсин -Ладижин.",
+      "ЛАДИЖИН",
+      "Лади́жин",
+      "#Ладижин",
+      "взрывы в Ладыжине",
+      "на Ладыжин",
+      "Ladyzhyn",
+      "drones over Ladyzhin",
+      "загроза Ладижинові",
+      "Ладѝжин"
+    ],
+    "shouldNotMatch": [
+      "Ладижинська ТЕС",
+      "на Ладижинську ТЕС",
+      "Ладижинська громада",
+      "Ладижинка",
+      "БпЛА на Ладижинку",
+      "у Ладижинці",
+      "ладижинці вийшли",
+      "ладижинець",
+      "Ладыжинская ТЭС",
+      "Ladyzhyn hromada",
+      "Ladyzhynka"
+    ]
+  }
+}
