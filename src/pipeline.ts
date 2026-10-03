@@ -3,7 +3,7 @@ import { fastTowns, isThreatReport } from './danger.js';
 import { formatAlert } from './format.js';
 import { scanTowns } from './matcher.js';
 import { logMessage } from './shadow.js';
-import { getTownWindow, markAlerted, saveWindows, wasAlerted } from './storage.js';
+import { getTownWindow, markAlerted, pruneAlerted, save, wasAlerted } from './storage.js';
 import { stripFooter } from './text.js';
 import type { IncomingMessage } from './types.js';
 import { recordMatch, type WindowDecision } from './window.js';
@@ -83,7 +83,8 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
         if (isFast) markAlerted(`${key}:fast`);
     }
     if (decisions.size === 0) return log('already-alerted');
-    saveWindows();
+    pruneAlerted();
+    save();
 
     const confidencePct = Object.fromEntries([...decisions].map(([t, d]) => [t, d.confidencePct]));
     // Only loud towns are delivered; a town in cooldown drops out of the header.

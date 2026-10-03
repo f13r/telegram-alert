@@ -265,3 +265,13 @@ test('pipeline: a missile for another oblast in a digest does not break a town\'
     await post(4, 95002, 'Харківщина:\n2х ракети на Харків.\n\nВінниччина:\nБпЛА курсом на Козятин.');
     assert.deepEqual(delivered, ['koziatyn']);
 });
+
+test('pipeline: one post writes data.json once, however many towns it names', async (t) => {
+    const writes = t.mock.method(fs, 'renameSync');
+    const now = Date.now() + 6 * 24 * 60 * 60_000;
+    await handleMessage(
+        { channelUsername: 'kpszsu', channelTitle: '', messageId: 96001, date: new Date(now), text: 'Ракети на Вінницю, Козятин, Ладижин', isEdit: false },
+        { now: () => now, deliver: async () => {} },
+    );
+    assert.equal(writes.mock.callCount(), 1);
+});

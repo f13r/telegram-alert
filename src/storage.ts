@@ -106,12 +106,13 @@ export function toggleTown(chatId: number, townId: string): boolean | null {
     return nowOn;
 }
 
-/** The live window object for a town — mutate it, then saveWindows(). */
+/** The live window object for a town — mutate it, then save(). */
 export function getTownWindow(townId: string): WindowState {
     return (data.windows[townId] ??= structuredClone(EMPTY_WINDOW));
 }
 
-export function saveWindows(): void {
+/** Write windows and alerted ids — once per post, after every change to them. */
+export function save(): void {
     persist();
 }
 
@@ -119,11 +120,15 @@ export function wasAlerted(key: string): boolean {
     return key in data.alertedIds;
 }
 
+/** In memory only; save() writes it. */
 export function markAlerted(key: string): void {
-    const cutoff = Date.now() - ALERTED_TTL_MS;
+    data.alertedIds[key] = Date.now();
+}
+
+/** Drop alerted ids older than a day. In memory only; save() writes it. */
+export function pruneAlerted(now = Date.now()): void {
+    const cutoff = now - ALERTED_TTL_MS;
     for (const [k, ts] of Object.entries(data.alertedIds)) {
         if (ts < cutoff) delete data.alertedIds[k];
     }
-    data.alertedIds[key] = Date.now();
-    persist();
 }
