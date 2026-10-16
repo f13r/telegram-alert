@@ -39,15 +39,16 @@
     }
   },
   "referencePoint": {
-    "_about": "Phrases that use a town only as a LANDMARK: «східніше Вінниці» means somewhere east of the city, not the city. A town mention directly after one of these does not count. If the town is named nowhere else, the post is dropped (shadow-logged as reference-point). «повз Вінницю» is deliberately NOT here — passing the city is a threat to it.",
+    "_about": "Phrases that use a town only as a LANDMARK: «східніше Вінниці» means somewhere east of the city, not the city. A town mention directly after one of these does not count. If the town is named nowhere else, the post is dropped (shadow-logged as reference-point). Both «на південь від» (direction) and «на півдні від» (location) count; «на» is optional so a typo like «кна півдні від» still hits. «повз Вінницю» is deliberately NOT here — passing the city is a threat to it.",
     "_syntax": "Regex fragments, lowercase, matched on normalized text immediately before the town form. Optional «м.»/«міста»/«г.»/«города» between phrase and town is handled in code.",
     "patterns": [
       "(?:північно|південно)-?(?:східніше|західніше)",
       "(?:східніше|західніше|північніше|південніше)",
-      "на (?:північний |південний )?(?:схід|захід|північ|південь)(?:-(?:схід|захід))? від",
+      "(?:на )?(?:північн(?:ий|ому) |південн(?:ий|ому) )?(?:схід|сході|захід|заході|північ|півночі|південь|півдні)(?:-(?:схід|сході|захід|заході))? від",
       "(?:северо|юго)-?(?:восточнее|западнее)",
       "(?:восточнее|западнее|севернее|южнее)",
-      "к (?:северо-|юго-)?(?:востоку|западу|северу|югу) от"
+      "к (?:северо-|юго-)?(?:востоку|западу|северу|югу) от",
+  "(?:на )?(?:северо-|юго-)?(?:востоке|западе|севере|юге) от"
     ]
   }
 }

@@ -146,13 +146,16 @@ not a threat to it:
 ```
 "1х реактивний східніше Вінниці на Погребище"     ✗ dropped  (reference-point)
 "Шахед на південний захід від м. Вінниця"        ✗ dropped
+"БпЛА на півдні від Вінниці, курс на Хмельниччину" ✗ dropped
 "БпЛА восточнее Винницы"                         ✗ dropped
 "…східніше Вінниці, далі курс на Вінницю"         ✓ alert    (second mention is real)
 "БпЛА повз Вінницю"                              ✓ alert    (passing the city is a threat)
 ```
 
 A mention directly after a compass comparative (`східніше`, `північно-західніше`, …) or
-a «на схід від» / «к востоку от» phrase does not count. If the town is named nowhere
+a «на схід від» / «на сході від» / «к востоку от» / «на востоке от» phrase does not count.
+The leading «на» is optional, so a typo like «кна півдні від» still hits. Locative forms
+(«на півдні від») added after three false loud alerts for Вінниця on 2026-10-12 and 2026-10-16. If the town is named nowhere
 else, the post is dropped and shadow-logged with `dropped: "reference-point"` and
 `landmarkOnly: [...]`. Added after a real false loud alert on 2026-10-01.
 
