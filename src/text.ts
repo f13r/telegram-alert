@@ -1,4 +1,4 @@
-import { vocabulary } from './config.js';
+import { vocabulary, type ThreatKeywords } from './config.js';
 
 const { stripCombining, stripInvisible, latinToCyrillicHomoglyphs } = vocabulary.normalization;
 
@@ -42,6 +42,21 @@ export function stripFooter(text: string, patterns: string[]): string {
 
 /** Escape a literal for use inside a RegExp. */
 export const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** "х-101" also matches a non-breaking hyphen, en/em dash or minus sign. */
+const anyHyphen = (s: string) => s.replace(/-/g, '[-\u2010-\u2015\u2212]');
+
+/**
+ * Word-boundary anchored, never a raw substring: "каб" must not fire on
+ * "кабінет", "ппо" must not fire on "ппозиція". Test against normalize()d text.
+ */
+export const keywordRe = (kw: Pick<ThreatKeywords, 'stems' | 'exact'>): RegExp =>
+    new RegExp(
+        '(?<!\\p{L})(?:' +
+            [...kw.stems.map((s) => escapeRe(s) + '\\p{L}*'), ...kw.exact.map(escapeRe)].map(anyHyphen).join('|') +
+            ')(?!\\p{L})',
+        'iu',
+    );
 
 export function escapeHtml(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

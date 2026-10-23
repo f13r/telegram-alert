@@ -4,7 +4,7 @@ import { checkWatchdog, healthReport, initWatchdog, markUnavailable, recordOk, r
 
 const HOUR = 60 * 60 * 1000;
 const T0 = 1_700_000_000_000;
-const ALL = ['kpszsu', 'ukraine_pyxx', 'war_monitor', 'vinnitsa_vinnistya'];
+const ALL = ['kpszsu', 'ukraine_pyxx', 'war_monitor', 'vinnitsa_vinnistya', 'vinnytsiappo'];
 
 test('a healthy start produces no warnings', () => {
     initWatchdog(T0);
@@ -33,7 +33,7 @@ test('all channels quiet at once IS reported, once', () => {
     const out = checkWatchdog(T0 + 7 * HOUR);
     assert.equal(out.length, 1);
     assert.equal(out[0].kind, 'all-quiet');
-    assert.match(out[0].text, /Жодного допису з усіх 4 каналів/);
+    assert.match(out[0].text, new RegExp(`Жодного допису з усіх ${ALL.length} каналів`));
 
     for (const u of ALL) recordOk(u, T0 + 8 * HOUR);
     assert.deepEqual(checkWatchdog(T0 + 8 * HOUR), [], 'must not repeat hourly');

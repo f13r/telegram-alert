@@ -57,18 +57,24 @@ export function onTownTap(chatId: number, townId: string): { answer: string; cha
  * promises an alert that would not come.
  */
 export function testReport(text: string): string {
-    const { matches, landmarkOnly } = scanTowns(text);
+    // Districts are scanned too; channels without localDistricts are told apart below.
+    const { matches, landmarkOnly } = scanTowns(text, { local: true });
+    const districtsOnly = matches.every((m) => m.district);
     const threshold = channelsConfig.loudThresholdPct;
-    const lines = matches.map((m) => `✓ ${townById.get(m.townId)!.name}: <code>${escapeHtml(m.form)}</code>`);
+    const lines = matches.map(
+        (m) => `✓ ${townById.get(m.townId)!.name}: <code>${escapeHtml(m.form)}</code>${m.district ? ' (район)' : ''}`,
+    );
     for (const id of landmarkOnly) lines.push(`✗ ${townById.get(id)!.name}: лише як орієнтир («східніше…»)`);
     if (lines.length === 0) lines.push('✗ жодного міста');
     if (matches.length === 0) return [...lines, '', '<i>не надішле сповіщення</i>'].join('\n');
 
-    if (fastTowns(text, matches.map((m) => m.townId)).length) lines.push('🚀 ракета/КАБ — пройде й під час 15-хв паузи');
+    if (fastTowns(text, matches.map((m) => m.townId), { local: true }).length) lines.push('🚀 ракета/КАБ — пройде й під час 15-хв паузи');
     lines.push('', '<i>якщо це перший допис про місто:</i>');
     for (const c of channelsConfig.channels) {
         const verdict =
-            c.requiresThreat && !isThreatReport(text)
+            districtsOnly && !c.localDistricts
+                ? '✗ район — лише для місцевих каналів'
+                : c.requiresThreat && !isThreatReport(text)
                 ? '✗ не загроза (немає ключового слова, або довгий допис/новина)'
                 : c.reliability * 100 >= threshold
                   ? '✓ одразу'

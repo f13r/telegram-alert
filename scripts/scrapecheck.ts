@@ -7,6 +7,7 @@
 import { channelsConfig, townById } from '../src/config.js';
 import { matchTowns } from '../src/matcher.js';
 import { classifyUnavailable, fetchPreview, parse } from '../src/sources/scrape.js';
+import { stripFooter } from '../src/text.js';
 
 async function main(): Promise<void> {
     for (const c of channelsConfig.channels) {
@@ -15,7 +16,10 @@ async function main(): Promise<void> {
             const newest = posts.at(-1);
             const ageMin = newest ? Math.round((Date.now() - newest.date.getTime()) / 60_000) : NaN;
             const counts = new Map<string, number>();
-            for (const p of posts) for (const m of matchTowns(p.text)) counts.set(m.townId, (counts.get(m.townId) ?? 0) + 1);
+            for (const p of posts) {
+                const text = stripFooter(p.text, c.stripFooterPatterns);
+                for (const m of matchTowns(text, { local: c.localDistricts })) counts.set(m.townId, (counts.get(m.townId) ?? 0) + 1);
+            }
             const hits = [...counts].map(([id, n]) => `${townById.get(id)!.name} ${n}`).join(' · ') || '0 збігів';
             console.log(
                 `${posts.length ? '✓' : '✗'} @${c.username.padEnd(20)} ` +

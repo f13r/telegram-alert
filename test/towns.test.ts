@@ -19,6 +19,28 @@ for (const t of towns) {
     });
 }
 
+for (const t of towns.filter((t) => t.districts)) {
+    const local = (s: string) => matchTowns(s, { local: true }).map((m) => m.townId);
+
+    test(`${t.id}: every district shouldMatch hits this town on a local channel only`, () => {
+        for (const s of t.districts!.fixtures.shouldMatch) {
+            assert.deepEqual(local(s), [t.id], `local should match ${t.id}: ${s}`);
+            assert.deepEqual(ids(s), [], `national channel should NOT match: ${s}`);
+        }
+    });
+
+    test(`${t.id}: every district shouldNotMatch hits no town, even on a local channel`, () => {
+        for (const s of t.districts!.fixtures.shouldNotMatch) assert.deepEqual(local(s), [], `should NOT match: ${s}`);
+    });
+}
+
+test('a district needs a shelter word; the town name does not', () => {
+    const local = (s: string) => matchTowns(s, { local: true });
+    assert.deepEqual(local('Шахед на Тяжилів'), []);
+    assert.deepEqual(local('Тяжилів, в укриття').map((m) => [m.townId, m.district]), [['vinnytsia', true]]);
+    assert.deepEqual(local('Шахед на Вінницю').map((m) => [m.townId, m.district]), [['vinnytsia', undefined]]);
+});
+
 test('one post can name several towns', () => {
     assert.deepEqual(ids('БпЛА з Вінниці на Козятин, далі Ладижин'), ['vinnytsia', 'ladyzhyn', 'koziatyn']);
 });

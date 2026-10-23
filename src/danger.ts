@@ -1,21 +1,6 @@
-import { fastThreatKeywords, threatKeywords, type ThreatKeywords } from './config.js';
-import { scanTowns } from './matcher.js';
-import { escapeRe, normalize } from './text.js';
-
-/** "х-101" also matches a non-breaking hyphen, en/em dash or minus sign. */
-const anyHyphen = (s: string) => s.replace(/-/g, '[-\u2010-\u2015\u2212]');
-
-/**
- * Word-boundary anchored, never a raw substring: "каб" must not fire on
- * "кабінет", "ппо" must not fire on "ппозиція".
- */
-const keywordRe = (kw: ThreatKeywords) =>
-    new RegExp(
-        '(?<!\\p{L})(?:' +
-            [...kw.stems.map((s) => escapeRe(s) + '\\p{L}*'), ...kw.exact.map(escapeRe)].map(anyHyphen).join('|') +
-            ')(?!\\p{L})',
-        'iu',
-    );
+import { fastThreatKeywords, threatKeywords } from './config.js';
+import { scanTowns, type ScanOptions } from './matcher.js';
+import { keywordRe, normalize } from './text.js';
 
 const dangerRe = keywordRe(threatKeywords);
 const fastRe = keywordRe(fastThreatKeywords);
@@ -58,7 +43,7 @@ const REGION_HEADER = /^[^\p{L}\n]*\p{Lu}[\p{L}ʼ'’-]*(?:щина|ччина|\
  * header (a general «Ракетна небезпека!») applies to every section. A post without
  * headers is one section.
  */
-export function fastTowns(text: string, towns: string[]): string[] {
+export function fastTowns(text: string, towns: string[], opts: ScanOptions = {}): string[] {
     const starts = [...text.matchAll(REGION_HEADER)].map((m) => m.index);
     if (starts.length === 0) return isFastThreat(text) ? [...towns] : [];
 
@@ -67,6 +52,6 @@ export function fastTowns(text: string, towns: string[]): string[] {
     return towns.filter(
         (t) =>
             preambleFast ||
-            sections.some((sec) => isFastThreat(sec) && scanTowns(sec).matches.some((m) => m.townId === t)),
+            sections.some((sec) => isFastThreat(sec) && scanTowns(sec, opts).matches.some((m) => m.townId === t)),
     );
 }

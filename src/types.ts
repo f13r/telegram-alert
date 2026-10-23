@@ -30,6 +30,8 @@ export interface ChannelCfg {
     /** Require a danger keyword too — for channels that publish other content. */
     requiresThreat: boolean;
     stripFooterPatterns: string[];
+    /** Also match city districts — only for oblast-only channels, see config/channels.json. */
+    localDistricts?: boolean;
     /** false = the channel has no public t.me/s page, so it cannot be read. */
     webPreview?: boolean;
 }
@@ -74,4 +76,6 @@ export interface TownMatch {
     /** The exact substring that matched, e.g. "Вінницю". */
     form: string;
     targetId: string;
+    /** Matched a district (Тяжилів, ГПЗ…), not the town name itself. */
+    district?: boolean;
 }

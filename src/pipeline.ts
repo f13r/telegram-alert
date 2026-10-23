@@ -46,9 +46,10 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
     if (!cfg) return;
 
     const text = stripFooter(msg.text, cfg.stripFooterPatterns);
-    const { matches, landmarkOnly } = scanTowns(text);
+    const scan = { local: cfg.localDistricts };
+    const { matches, landmarkOnly } = scanTowns(text, scan);
     const danger = cfg.requiresThreat ? isThreatReport(text) : null;
-    const fast = new Set(fastTowns(text, matches.map((m) => m.townId)));
+    const fast = new Set(fastTowns(text, matches.map((m) => m.townId), scan));
 
     const log = (dropped?: string, confidencePct?: Record<string, number>) =>
         logMessage({

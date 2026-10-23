@@ -1,7 +1,8 @@
 {
-  "_about": "Monitored channels. You must be SUBSCRIBED to each in your own Telegram app (mute + archive them). The bot never joins anything.",
-  "_reliability": "Per-source probability that a town match here means a real threat. Combined across sources as 1 - PROD(1 - r). One reliable source = 90%, all four = 100%, the local news channel alone = 50%.",
+  "_about": "Monitored channels. Public channels only, read from their t.me/s web page — no Telegram account or subscription needed.",
+  "_reliability": "Per-source probability that a town match here means a real threat. Combined across sources as 1 - PROD(1 - r). One reliable source = 90%, all of them = 100%, the local news channel alone = 50%.",
   "_requiresThreat": "true = message must ALSO contain a danger keyword (config/threat-keywords.json). Only for channels that publish non-threat content.",
+  "_localDistricts": "true = also match city districts (Тяжилів, ГПЗ, Київська…, see each town's `districts`). Only for oblast-only channels: on a national feed «Київська» or «Центр» is somewhere else.",
   "correlationWindowMin": 20,
   "loudThresholdPct": 90,
   "channels": [
@@ -34,10 +35,22 @@
       "label": "Типова Вінниця",
       "reliability": 0.5,
       "requiresThreat": true,
+      "localDistricts": true,
       "stripFooterPatterns": [
         "Надіслати новину\\s*@\\S+",
         "👉\\s*ПІДПИСАТИСЯ",
         "^\\s*ПІДПИСАТИСЯ\\s*$"
+      ],
+      "webPreview": true
+    },
+    {
+      "username": "vinnytsiappo",
+      "label": "ППО Вінниця",
+      "reliability": 0.9,
+      "requiresThreat": false,
+      "localDistricts": true,
+      "stripFooterPatterns": [
+        "(?:\\p{Extended_Pictographic}\\uFE0F?[^\\S\\n]*)?Телеграм канал ППО(?:\\s+Вінниця)?"
       ],
       "webPreview": true
     }

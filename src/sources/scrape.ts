@@ -303,6 +303,8 @@ export function parse(html: string, username: string): Post[] {
         const post = $(el).attr('data-post');
         const id = Number(post?.split('/')[1]);
         if (!Number.isFinite(id)) return;
+        // «ППО Вінниця pinned «…»» — the channel title alone would name the town.
+        if ($(el).hasClass('service_message')) return;
 
         // A reply shows the quoted post first, in its own .tgme_widget_message_text
         // (js-message_reply_text). Reading that would alert on the quote and miss

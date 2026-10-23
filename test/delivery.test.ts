@@ -274,3 +274,19 @@ test('pipeline: one post writes data.json once, however many towns it names', as
     );
     assert.equal(writes.mock.callCount(), 1);
 });
+
+test('pipeline: a district alerts from a local channel only, and only with a shelter word', async () => {
+    const delivered: Array<{ channel: string; towns: string[] }> = [];
+    const now = Date.now() + 7 * 24 * 60 * 60_000;
+    const date = new Date(now - 30_000);
+    const post = (channelUsername: string, messageId: number, text: string) =>
+        handleMessage(
+            { channelUsername, channelTitle: '', messageId, date, text, isEdit: false },
+            { now: () => now, deliver: async (d) => void delivered.push({ channel: channelUsername, towns: [...d.keys()] }) },
+        );
+    await post('kpszsu', 83000, 'ГПЗ / Тяжилів / Хутори в укриття !');
+    await post('vinnytsiappo', 1500, 'Через хутори на місто!\n\n💪 Телеграм канал ППО Вінниця');
+    assert.deepEqual(delivered, [], 'national channel ignores districts; no shelter word, footer stripped');
+    await post('vinnytsiappo', 1501, 'ГПЗ / Тяжилів / Хутори в укриття !\n\n💪 Телеграм канал ППО Вінниця');
+    assert.deepEqual(delivered, [{ channel: 'vinnytsiappo', towns: ['vinnytsia'] }]);
+});

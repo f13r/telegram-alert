@@ -1,11 +1,12 @@
 import { towns, vocabulary, type TownTarget } from './config.js';
-import { clean, escapeRe, normalize } from './text.js';
+import { clean, escapeRe, keywordRe, normalize } from './text.js';
 import type { TownMatch } from './types.js';
 
 interface Compiled {
     id: string;
     re: RegExp;
     matchOn: 'normalized' | 'raw';
+    district?: boolean;
 }
 
 function compile(t: TownTarget): Compiled {
@@ -27,7 +28,24 @@ const landmarkRe = new RegExp(
 );
 const LANDMARK_LOOKBEHIND = 60;
 
-const compiled = towns.map((t) => ({ townId: t.id, targets: t.targets.map(compile) }));
+const compiled = towns.map((t) => ({
+    townId: t.id,
+    targets: t.targets.map(compile),
+    districts: t.districts && {
+        requires: keywordRe(t.districts.requires),
+        targets: t.districts.targets.map((d) => ({
+            id: d.id,
+            re: new RegExp(d.regex, 'giu'),
+            matchOn: 'normalized' as const,
+            district: true,
+        })),
+    },
+}));
+
+export interface ScanOptions {
+    /** Also match city districts — set for channels with localDistricts. */
+    local?: boolean;
+}
 
 export interface TownScan {
     /** Towns the text names as a place in its own right, in catalogue order. */
@@ -37,7 +55,7 @@ export interface TownScan {
 }
 
 /** Every town this text names, split into real mentions and landmark-only ones. */
-export function scanTowns(raw: string): TownScan {
+export function scanTowns(raw: string, { local = false }: ScanOptions = {}): TownScan {
     const norm = normalize(raw);
     const latin = clean(raw);
     const matches: TownMatch[] = [];
@@ -45,14 +63,16 @@ export function scanTowns(raw: string): TownScan {
     for (const town of compiled) {
         let match: TownMatch | undefined;
         let landmark = false;
-        for (const c of town.targets) {
+        // Districts come after the town's own targets, so a post naming both reports the town.
+        const districts = local && town.districts?.requires.test(norm) ? town.districts.targets : [];
+        for (const c of [...town.targets, ...districts]) {
             const text = c.matchOn === 'raw' ? latin : norm;
             for (const hit of text.matchAll(c.re)) {
                 if (landmarkRe.test(text.slice(Math.max(0, hit.index - LANDMARK_LOOKBEHIND), hit.index))) {
                     landmark = true;
                     continue;
                 }
-                match = { townId: town.townId, form: hit[0], targetId: c.id };
+                match = { townId: town.townId, form: hit[0], targetId: c.id, ...(c.district ? { district: true } : {}) };
                 break;
             }
             if (match) break;
@@ -64,6 +84,6 @@ export function scanTowns(raw: string): TownScan {
 }
 
 /** Every town this text names, in catalogue order, with the exact form that matched. */
-export function matchTowns(raw: string): TownMatch[] {
-    return scanTowns(raw).matches;
+export function matchTowns(raw: string, opts: ScanOptions = {}): TownMatch[] {
+    return scanTowns(raw, opts).matches;
 }

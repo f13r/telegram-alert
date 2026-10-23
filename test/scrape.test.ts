@@ -68,6 +68,14 @@ test('a reply post is read as its own text, not the quoted post (live kpszsu 825
     assert.equal(p.text, '💣 Ще КАБи на Суми!');
 });
 
+test('a service message («ППО Вінниця pinned …») is not a post (live vinnytsiappo 1390)', () => {
+    const msg = (id: number, cls: string, text: string) =>
+        `<div class="tgme_widget_message ${cls} js-widget_message" data-post="vinnytsiappo/${id}">` +
+        `<div class="tgme_widget_message_text js-message_text">${text}</div></div>`;
+    const html = msg(1390, 'text_not_supported_wrap service_message', 'ППО Вінниця 🚀 pinned «❤️ Дякуємо»') + msg(1391, '', 'Шахед на Вінницю');
+    assert.deepEqual(parse(html, 'vinnytsiappo').map((p) => p.id), [1391]);
+});
+
 import { forgetOffPage } from '../src/sources/scrape.js';
 
 test('a slow channel\'s posts still on its page are remembered however busy other channels are', () => {

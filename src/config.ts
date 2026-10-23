@@ -56,6 +56,12 @@ export interface TownCfg {
     order: number;
     targets: TownTarget[];
     fixtures: { shouldMatch: string[]; shouldNotMatch: string[] };
+    /** Only on channels with localDistricts, and only with a shelter word in the post. */
+    districts?: {
+        requires: Pick<ThreatKeywords, 'stems' | 'exact'>;
+        targets: Array<{ id: string; label: string; regex: string }>;
+        fixtures: { shouldMatch: string[]; shouldNotMatch: string[] };
+    };
 }
 
 export interface ThreatKeywords {

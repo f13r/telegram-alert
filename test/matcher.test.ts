@@ -24,6 +24,13 @@ test('promo footer is stripped before matching', () => {
     assert.equal(out, '2 БпЛА на Вінницю');
 });
 
+test('ППО Вінниця footer is stripped, so it no longer names the town', () => {
+    const cfg = channelsConfig.channels.find((c) => c.username === 'vinnytsiappo')!;
+    for (const footer of ['💪 Телеграм канал ППО Вінниця', '😚 Телеграм канал ППО Вінниця', 'Телеграм канал ППО']) {
+        assert.equal(stripFooter(`📡 Чисто на Вінниччині🫡\n\n${footer}`, cfg.stripFooterPatterns), '📡 Чисто на Вінниччині🫡');
+    }
+});
+
 const fresh = (): WindowState => ({ loudAt: null, sources: {}, fastSources: {} });
 const MIN = 60_000;
 
