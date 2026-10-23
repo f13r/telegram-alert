@@ -27,14 +27,19 @@ Without this, `deploy.sh` syncs and builds but leaves the restart to you.
 
 ## Updating
 
-From the Mac, in the project root:
-
 ```bash
 ./deploy/deploy.sh
 ```
 
-Syncs source (never `node_modules`, `dist`, `data`), copies `.env` as 0600,
-runs `npm ci && npm run build`, and restarts the service if it may.
+- **On the server** (`/home/f13r/telegram-alert` is the deployed copy): runs
+  `npm ci && npm run build` in place and restarts the service.
+- **From the Mac**: first syncs source (never `node_modules`, `dist`, `data`) and
+  copies `.env` as 0600, then builds and restarts over ssh.
+
+It tells which by checking whether it runs in `/home/f13r/telegram-alert` on the
+host's IP; force it with `DEPLOY_LOCAL=1` or `DEPLOY_LOCAL=0`. Restart uses
+passwordless sudo if the rule above is installed, otherwise asks for the password
+when run from a terminal, otherwise prints the command to run yourself.
 
 ## Watching it
 
