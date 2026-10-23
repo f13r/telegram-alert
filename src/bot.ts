@@ -108,10 +108,11 @@ export function buildBot(sourceName: string): Telegraf {
         }
         const name = [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ') || ctx.from.username || 'невідомо';
         const added = addSubscriber(ctx.chat.id, name);
+        const on = added ? followedTowns(getSubscriber(ctx.chat.id)!).map((id) => townById.get(id)!.name) : [];
         await ctx.reply(
             added
-                ? `✅ Підписано на сповіщення про загрозу для міст: ${towns.map((t) => t.name).join(', ')}.\n\n` +
-                      'Обрати міста: /cities\n\n' +
+                ? `✅ Підписано на сповіщення про загрозу для міст: ${on.join(', ')}.\n\n` +
+                      'Додати інші міста: /cities\n\n' +
                       'Порада: увімкніть для цього чату окремий гучний звук і додайте у винятки «Не турбувати».'
                 : 'Ви вже підписані. Обрати міста: /cities',
         );

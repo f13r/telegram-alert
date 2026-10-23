@@ -11,9 +11,13 @@ const { addSubscriber, getSubscriber, toggleTown } = await import('../src/storag
 const rows = (chatId: number) =>
     citiesKeyboard(getSubscriber(chatId)!).reply_markup.inline_keyboard.map((r) => r[0].text);
 
-test('keyboard: one row per town, in catalogue order, with state', () => {
+test('new subscriber starts with only Вінниця on', () => {
     addSubscriber(5, 'x');
-    toggleTown(5, 'koziatyn');
+    assert.deepEqual(rows(5), ['✅ Вінниця', '⬜ Ладижин', '⬜ Козятин']);
+});
+
+test('keyboard: one row per town, in catalogue order, with state', () => {
+    toggleTown(5, 'ladyzhyn');
     assert.deepEqual(rows(5), ['✅ Вінниця', '✅ Ладижин', '⬜ Козятин']);
     const k = citiesKeyboard(getSubscriber(5)!);
     assert.equal(k.reply_markup.inline_keyboard[1][0].callback_data, 'town:ladyzhyn');

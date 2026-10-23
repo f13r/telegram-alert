@@ -71,9 +71,13 @@ function persist(): void {
 
 export const getSubscribers = (): Subscriber[] => data.subscribers;
 
+/** A new subscriber starts with only these towns on; the rest are one tap away in /cities. */
+const DEFAULT_TOWNS = ['vinnytsia'];
+
 export function addSubscriber(chatId: number, name: string): boolean {
     if (data.subscribers.some((s) => s.chatId === chatId)) return false;
-    data.subscribers.push({ chatId, name, since: new Date().toISOString() });
+    const off = towns.map((t) => t.id).filter((id) => !DEFAULT_TOWNS.includes(id));
+    data.subscribers.push({ chatId, name, since: new Date().toISOString(), off });
     persist();
     return true;
 }
