@@ -70,10 +70,18 @@ export interface ThreatKeywords {
     fixtures: { danger: string[]; notDanger: string[] };
 }
 
+export interface NewsKeywords {
+    stems: string[];
+    exact: string[];
+    fixtures: { news: string[]; notNews: string[] };
+}
+
 export const vocabulary = readJson<Vocabulary>('config/vocabulary.json');
 export const threatKeywords = readJson<ThreatKeywords>('config/threat-keywords.json');
 /** Missiles and КАБ — minutes to impact, so they pass a cooldown. */
 export const fastThreatKeywords = readJson<ThreatKeywords>('config/threat-fast.json');
+/** Reporting on an attack that is over — dropped on channels with rejectNews. */
+export const newsKeywords = readJson<NewsKeywords>('config/news-keywords.json');
 export const channelsConfig = readJson<ChannelsConfig>('config/channels.json');
 
 function loadTowns(dir: string): TownCfg[] {

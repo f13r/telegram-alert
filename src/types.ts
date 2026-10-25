@@ -29,6 +29,8 @@ export interface ChannelCfg {
     reliability: number;
     /** Require a danger keyword too — for channels that publish other content. */
     requiresThreat: boolean;
+    /** Drop after-the-fact news (config/news-keywords.json) — for local channels. */
+    rejectNews?: boolean;
     stripFooterPatterns: string[];
     /** Also match city districts — only for oblast-only channels, see config/channels.json. */
     localDistricts?: boolean;

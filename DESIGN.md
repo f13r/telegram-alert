@@ -183,6 +183,42 @@ most 200 characters**. Every real threat post on the channel is a single short l
 The three pure air-threat channels are **unfiltered**, so an unusual phrasing there can
 never be silently dropped. 13 fixtures, all passing.
 
+## 3b′. News filter
+
+`config/news-keywords.json`. Applied to channels with `rejectNews: true` — the two
+local channels, which post live threats and also news about an attack that is
+already over:
+
+```
+"💥 Внаслідок удару ворога… у Вінниці, постраждали 6 людей"   ✗ dropped
+"Вночі ворог вдарив Реактивним Шахедом по «Епіцентру»…"       ✗ dropped
+"Момент сьогоднішнього влучання у Вінниці"                    ✗ dropped
+"❗️ВІННИЦЯ, в укриття ! Поки йде курсом на місто!"            ✓ kept
+"💥 ВИБУХ у ВІННИЦІ"                                          ✓ kept
+```
+
+Such a post names the town and has threat words, so it passed the danger filter.
+On 2026-10-25 three of them went out LOUD from ППО Вінниця. Worse, the 07:01 one
+started the 15-min cooldown, which held back «Шахед на ВІННИЦЮ» at 07:10, so the
+first real alert only went out at 07:16. A news post is dropped before the window
+(shadow-logged `dropped: "news"`), so it never counts as corroboration and never
+starts a cooldown. Each word must be impossible in a live post. Before adding one,
+check it against the shadow log.
+
+Audited on 2026-10-25 against the full t.me/s history: 2 months of Типова (3375 posts)
+and all of ППО (1586 posts). The list catches all 12 Типова posts that pass the danger
+filter but are news, and all 3 ППО news posts. It flags none of the live posts. Two
+words were removed after flagging live ППО posts: «вчорашн» («летять вчорашнім
+маршрутом») and «термінові новини». The second turned out to be an ad footer, so it is
+now stripped like the other footers. So are Типова's «Якщо маєте фото/відео з
+Вінниці… надсилайте» and ППО's «Підписатись на ППО Вінниця». Each named the town on
+its own, which gave 15 Типова posts and 2 ППО posts a false town match.
+
+ППО Вінниця went from 0.9 to 0.8 the same day. Alone it now waits for a second
+channel, and in replays of 2026-10-24/25 that cost 19–66 s. 0.8 rather than Типова's
+0.5, so that the two local channels still confirm each other: in the 05:09 attack
+on Вінниця neither national channel posted at all.
+
 ## 3c. Confidence
 
 Each channel carries a `reliability` r. Confidence is standard independent-evidence
@@ -196,6 +232,8 @@ confidence = 1 − Π(1 − rᵢ)
 | Reporting channels | Confidence | Delivery |
 |---|---|---|
 | Типова Вінниця alone | 50% | **not sent** — shadow-logged `dropped: "unconfirmed"` |
+| ППО Вінниця alone | 80% | **not sent** — shadow-logged `dropped: "unconfirmed"` |
+| ППО Вінниця + Типова Вінниця | 90% | 🚨 LOUD |
 | one reliable channel | 90% | 🚨 LOUD |
 | Типова Вінниця + one reliable | 95% | 🚨 LOUD |
 | two reliable | 99% | 🚨 LOUD |
@@ -218,9 +256,10 @@ from fresh posts only.
 | `@kpszsu` | official ПС ЗСУ | 0.9 | no |
 | `@ukraine_pyxx` | air-threat tracking | 0.9 | no |
 | `@war_monitor` | air-threat tracking | 0.9 | no |
-| `@vinnitsa_vinnistya` | **general local news** | 0.5 | **yes** + footer stripping |
+| `@vinnitsa_vinnistya` | **general local news** | 0.5 | **yes** + news filter + footer stripping |
+| `@vinnytsiappo` | local air-threat tracking, posts news too | 0.8 | news filter + footer stripping |
 
-All four are public and read through their `t.me/s/` pages — no subscription needed. A
+All five are public and read through their `t.me/s/` pages — no subscription needed. A
 channel without a web preview (`webPreview: false`) cannot be read at all.
 
 ## 4. Threat window

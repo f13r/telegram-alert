@@ -252,10 +252,11 @@ export async function diagnose302(
 
 /**
  * The channel's t.me/s preview page. Throws on anything but a 200 — scrapecheck
- * uses this too, so it requests exactly what the scraper does.
+ * uses this too, so it requests exactly what the scraper does. `before` pages
+ * back through history (scripts/filter-audit.ts).
  */
-export async function fetchPreview(username: string): Promise<string> {
-    const { data } = await axios.get<string>(`https://t.me/s/${username}`, {
+export async function fetchPreview(username: string, before?: number): Promise<string> {
+    const { data } = await axios.get<string>(`https://t.me/s/${username}${before ? `?before=${before}` : ''}`, {
         timeout: 12_000,
         headers: { 'User-Agent': UA, 'Accept-Language': 'uk,en;q=0.8' },
         // A 302 to /<channel> means the preview was switched off. Following

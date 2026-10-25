@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "test": "node --import tsx --test test/*.test.ts",
     "scrapecheck": "tsx scripts/scrapecheck.ts",
+    "filter-audit": "tsx scripts/filter-audit.ts",
     "prestart": "npm run build"
   },
   "license": "ISC",

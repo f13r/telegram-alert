@@ -1,5 +1,5 @@
 import { channelByUsername, channelsConfig, env, townById } from './config.js';
-import { fastTowns, isThreatReport } from './danger.js';
+import { fastTowns, isNews, isThreatReport } from './danger.js';
 import { formatAlert } from './format.js';
 import { scanTowns } from './matcher.js';
 import { logMessage } from './shadow.js';
@@ -27,12 +27,15 @@ export interface PipelineDeps {
  *   stale           → shadow-logged, dropped silently (a boot after a blackout
  *                     must not replay hours-old alerts as if they were live)
  *   mixed channel   → must also contain a danger keyword
+ *   news            → a local channel reporting an attack that is over («внаслідок
+ *                     удару… постраждали») is dropped before the window, so it
+ *                     neither alerts nor starts a cooldown
  *   already alerted → an edit does not re-notify for a town it already alerted;
  *                     an edit that adds a town alerts for that town only; an edit
  *                     that adds missile/КАБ wording is evaluated once more
- *   unconfirmed     → below loudThresholdPct (Типова Вінниця alone) is recorded in
- *                     the window but never delivered; it only adds confidence once
- *                     a reliable channel reports the same town
+ *   unconfirmed     → below loudThresholdPct (Типова Вінниця or ППО Вінниця alone)
+ *                     is recorded in the window but never delivered; it only adds
+ *                     confidence once another channel reports the same town
  *   cooldown        → the town went loud less than COOLDOWN_MIN ago; not delivered
  *                     and not counted. Missile/КАБ posts (`fast`, judged on the town's
  *                     own region section — see fastTowns) are the exception:
@@ -71,6 +74,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
 
     if (now - msg.date.getTime() > env.freshnessMin * 60_000) return log('stale');
     if (cfg.requiresThreat && !danger) return log('not-danger');
+    if (cfg.rejectNews && isNews(text)) return log('news');
 
     const decisions = new Map<string, WindowDecision>();
     for (const m of matches) {

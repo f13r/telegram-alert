@@ -287,6 +287,29 @@ test('pipeline: a district alerts from a local channel only, and only with a she
     await post('kpszsu', 83000, 'ГПЗ / Тяжилів / Хутори в укриття !');
     await post('vinnytsiappo', 1500, 'Через хутори на місто!\n\n💪 Телеграм канал ППО Вінниця');
     assert.deepEqual(delivered, [], 'national channel ignores districts; no shelter word, footer stripped');
+    // ППО alone is 80%; Типова's earlier post confirms the district match.
+    await post('vinnitsa_vinnistya', 41500, 'БпЛА на Вінницю');
     await post('vinnytsiappo', 1501, 'ГПЗ / Тяжилів / Хутори в укриття !\n\n💪 Телеграм канал ППО Вінниця');
     assert.deepEqual(delivered, [{ channel: 'vinnytsiappo', towns: ['vinnytsia'] }]);
+});
+
+test('pipeline: local-channel news about last night is dropped and starts no cooldown (2026-10-25)', async () => {
+    const delivered: string[] = [];
+    const now = Date.now() + 8 * 24 * 60 * 60_000;
+    const date = new Date(now - 30_000);
+    const post = (channelUsername: string, messageId: number, text: string) =>
+        handleMessage(
+            { channelUsername, channelTitle: '', messageId, date, text, isEdit: false },
+            { now: () => now, deliver: async () => void delivered.push(channelUsername) },
+        );
+    await post('vinnytsiappo', 1751, '💥 Внаслідок удару ворога по житловій пʼятиповерхівці у Вінниці, постраждали 6 людей');
+    await post('vinnitsa_vinnistya', 41600, 'Момент сьогоднішнього влучання у Вінниці');
+    assert.deepEqual(delivered, [], 'two news posts must not confirm each other');
+    const log = fs.readFileSync(path.join(process.env.DATA_DIR!, `shadow-${new Date().toISOString().slice(0, 10)}.ndjson`), 'utf8');
+    const entry = log.trim().split('\n').map((l) => JSON.parse(l)).find((e) => e.messageId === 1751);
+    assert.equal(entry.dropped, 'news');
+
+    // The next real threat goes out at once, not held by a news-started cooldown.
+    await post('kpszsu', 83100, 'БпЛА на Вінницю');
+    assert.deepEqual(delivered, ['kpszsu']);
 });

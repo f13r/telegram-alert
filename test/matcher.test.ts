@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { channelsConfig, fastThreatKeywords, threatKeywords } from '../src/config.js';
-import { isDanger, isFastThreat } from '../src/danger.js';
+import { channelsConfig, fastThreatKeywords, newsKeywords, threatKeywords } from '../src/config.js';
+import { isDanger, isFastThreat, isNews } from '../src/danger.js';
 import { stripFooter } from '../src/text.js';
 import { recordMatch } from '../src/window.js';
 import type { WindowState } from '../src/types.js';
@@ -13,6 +13,11 @@ test('danger filter separates threats from local news', () => {
     for (const s of threatKeywords.fixtures.notDanger) assert.ok(!isDanger(s), `not danger: ${s}`);
 });
 
+test('news filter: reporting on a past attack yes, live ППО/Типова posts no', () => {
+    for (const s of newsKeywords.fixtures.news) assert.ok(isNews(s), `news: ${s}`);
+    for (const s of newsKeywords.fixtures.notNews) assert.ok(!isNews(s), `not news: ${s}`);
+});
+
 test('fast-threat filter: missiles and КАБ yes, drones no', () => {
     for (const s of fastThreatKeywords.fixtures.danger) assert.ok(isFastThreat(s), `fast: ${s}`);
     for (const s of fastThreatKeywords.fixtures.notDanger) assert.ok(!isFastThreat(s), `not fast: ${s}`);
@@ -22,6 +27,20 @@ test('promo footer is stripped before matching', () => {
     const cfg = channelsConfig.channels.find((c) => c.username === 'vinnitsa_vinnistya')!;
     const out = stripFooter('2 БпЛА на Вінницю\n\nНадіслати новину @typ_Vinn_bot\n👉ПІДПИСАТИСЯ', cfg.stripFooterPatterns);
     assert.equal(out, '2 БпЛА на Вінницю');
+});
+
+test('Типова «send us your photos» footer is stripped — it named Вінниця and said «фото» (43127, 43415)', () => {
+    const cfg = channelsConfig.channels.find((c) => c.username === 'vinnitsa_vinnistya')!;
+    for (const [post, want] of [
+        ['Вибух\n\n🤫 Якщо маєте цікаві, важливі фото/відео з Вінниці, то надсилайте нам у бот 👉🏻 @typ_Vinn_bot\nㅤ \nНадіслати новину @typ_Vinn_bot\n👉ПІДПИСАТИСЯ', 'Вибух'],
+        ['Момент вибуху у Вінниці\n\nСвої кадри з місця надсилайте нам у @typ_Vinn_bot', 'Момент вибуху у Вінниці'],
+    ]) assert.equal(stripFooter(post, cfg.stripFooterPatterns), want);
+});
+
+test('ППО Вінниця ad footers are stripped, so they no longer name the town (783, 60)', () => {
+    const cfg = channelsConfig.channels.find((c) => c.username === 'vinnytsiappo')!;
+    assert.equal(stripFooter('В укриття Вінниця!\n\n👉 Термінові новини Вінниці 👈', cfg.stripFooterPatterns), 'В укриття Вінниця!');
+    assert.equal(stripFooter('🛵 Реактивний Шахед на Теплик\n\n💪 Підписатись на ППО Вінниця', cfg.stripFooterPatterns), '🛵 Реактивний Шахед на Теплик');
 });
 
 test('ППО Вінниця footer is stripped, so it no longer names the town', () => {
@@ -44,6 +63,20 @@ test('confidence: the local news channel alone is 50% and silent', () => {
     const d = recordMatch(fresh(), 'vinnitsa_vinnistya', false, 0);
     assert.equal(d.confidencePct, 50);
     assert.ok(!d.loud);
+});
+
+test('confidence: ППО Вінниця alone is 80% and silent', () => {
+    const d = recordMatch(fresh(), 'vinnytsiappo', false, 0);
+    assert.equal(d.confidencePct, 80);
+    assert.ok(!d.loud);
+});
+
+test('confidence: the two local channels confirm each other at 90% (05:09 Вінниця, 2026-10-25)', () => {
+    const s = fresh();
+    assert.ok(!recordMatch(s, 'vinnitsa_vinnistya', false, 0).loud);
+    const second = recordMatch(s, 'vinnytsiappo', false, MIN);
+    assert.equal(second.confidencePct, 90);
+    assert.ok(second.loud);
 });
 
 test('escalation: 50% then a reliable source crosses to 95% and goes loud', () => {

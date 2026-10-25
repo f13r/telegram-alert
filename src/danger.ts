@@ -1,9 +1,18 @@
-import { fastThreatKeywords, threatKeywords } from './config.js';
+import { fastThreatKeywords, newsKeywords, threatKeywords } from './config.js';
 import { scanTowns, type ScanOptions } from './matcher.js';
 import { keywordRe, normalize } from './text.js';
 
 const dangerRe = keywordRe(threatKeywords);
 const fastRe = keywordRe(fastThreatKeywords);
+const newsRe = keywordRe(newsKeywords);
+
+/**
+ * Reporting on an attack that is already over — «внаслідок удару… постраждали»,
+ * «Вночі ворог вдарив… по «Епіцентру»». Applied ONLY to channels with rejectNews.
+ */
+export function isNews(text: string): boolean {
+    return newsRe.test(normalize(text));
+}
 
 /** Applied ONLY to channels with requiresThreat — see config/channels.json. */
 export function isDanger(text: string): boolean {

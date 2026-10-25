@@ -76,6 +76,13 @@ test('/test: a news article is ignored on Типова even with threat words', 
     assert.match(r, /Типова Вінниця.*не загроза/);
 });
 
+test('/test: ППО needs confirmation; its news about last night is dropped', () => {
+    assert.match(testReport('❗️ВІННИЦЯ, в укриття !'), /ППО Вінниця.*лише з підтвердженням.*80%/);
+    const r = testReport('💥 Внаслідок удару ворога по пʼятиповерхівці у Вінниці, постраждали 6 людей');
+    assert.match(r, /ППО Вінниця.*новина про наслідки/);
+    assert.match(r, /ПС ЗСУ.*одразу/, 'national channels are not news-filtered');
+});
+
 test('/test: a landmark-only mention says why nothing is sent', () => {
     const r = testReport('1х реактивний східніше Вінниці на Погребище');
     assert.match(r, /орієнтир/);

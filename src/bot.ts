@@ -1,6 +1,6 @@
 import { Telegraf } from 'telegraf';
 import { channelsConfig, env, townById, towns } from './config.js';
-import { fastTowns, isThreatReport } from './danger.js';
+import { fastTowns, isNews, isThreatReport } from './danger.js';
 import { scanTowns } from './matcher.js';
 import {
     addSubscriber,
@@ -76,6 +76,8 @@ export function testReport(text: string): string {
                 ? '✗ район — лише для місцевих каналів'
                 : c.requiresThreat && !isThreatReport(text)
                 ? '✗ не загроза (немає ключового слова, або довгий допис/новина)'
+                : c.rejectNews && isNews(text)
+                ? '✗ новина про наслідки, не загроза'
                 : c.reliability * 100 >= threshold
                   ? '✓ одразу'
                   : `✗ лише з підтвердженням іншого каналу (${Math.round(c.reliability * 100)}%)`;

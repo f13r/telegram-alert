@@ -1,7 +1,8 @@
 {
   "_about": "Monitored channels. Public channels only, read from their t.me/s web page — no Telegram account or subscription needed.",
-  "_reliability": "Per-source probability that a town match here means a real threat. Combined across sources as 1 - PROD(1 - r). One reliable source = 90%, all of them = 100%, the local news channel alone = 50%.",
+  "_reliability": "Per-source probability that a town match here means a real threat. Combined across sources as 1 - PROD(1 - r). One reliable source = 90%, all of them = 100%. The two local channels stay silent alone (Типова 50%, ППО 80%) but confirm each other: ППО + Типова = 90%.",
   "_requiresThreat": "true = message must ALSO contain a danger keyword (config/threat-keywords.json). Only for channels that publish non-threat content.",
+  "_rejectNews": "true = drop after-the-fact news about an attack that is over (config/news-keywords.json). For the local channels, which post both.",
   "_localDistricts": "true = also match city districts (Тяжилів, ГПЗ, Київська…, see each town's `districts`). Only for oblast-only channels: on a national feed «Київська» or «Центр» is somewhere else.",
   "correlationWindowMin": 20,
   "loudThresholdPct": 90,
@@ -35,8 +36,11 @@
       "label": "Типова Вінниця",
       "reliability": 0.5,
       "requiresThreat": true,
+      "rejectNews": true,
       "localDistricts": true,
       "stripFooterPatterns": [
+        "(?:🤫\\s*)?Якщо маєте[^\\n]*?надсилайте[^\\n]*",
+        "Свої кадри[^\\n]*?надсилайте[^\\n]*",
         "Надіслати новину\\s*@\\S+",
         "👉\\s*ПІДПИСАТИСЯ",
         "^\\s*ПІДПИСАТИСЯ\\s*$"
@@ -46,11 +50,14 @@
     {
       "username": "vinnytsiappo",
       "label": "ППО Вінниця",
-      "reliability": 0.9,
+      "reliability": 0.8,
       "requiresThreat": false,
+      "rejectNews": true,
       "localDistricts": true,
       "stripFooterPatterns": [
-        "(?:\\p{Extended_Pictographic}\\uFE0F?[^\\S\\n]*)?Телеграм канал ППО(?:\\s+Вінниця)?"
+        "(?:\\p{Extended_Pictographic}\\uFE0F?[^\\S\\n]*)?Телеграм канал ППО(?:\\s+Вінниця)?",
+        "👉\\s*Термінові новини Вінниці\\s*👈",
+        "(?:\\p{Extended_Pictographic}\\uFE0F?[^\\S\\n]*)?Підписатись на ППО(?:\\s+Вінниця)?"
       ],
       "webPreview": true
     }
