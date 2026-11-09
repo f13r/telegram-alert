@@ -40,7 +40,16 @@ export interface ShownTown {
  * A single town keeps the original layout: confidence in the header, corroboration
  * in the footer. Several towns put each town's confidence in the header instead.
  */
-export function formatAlert(msg: IncomingMessage, text: string, label: string, shown: ShownTown[]): string {
+/** First line of every beta alert — the line a phone notification shows. */
+export const BETA_MARK = '🧪 <b>БЕТА</b> — бачите лише ви';
+
+export function formatAlert(
+    msg: IncomingMessage,
+    text: string,
+    label: string,
+    shown: ShownTown[],
+    beta = false,
+): string {
     const link = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
 
     let header: string;
@@ -54,6 +63,7 @@ export function formatAlert(msg: IncomingMessage, text: string, label: string, s
     }
 
     return [
+        ...(beta ? [BETA_MARK] : []),
         header,
         '',
         escapeHtml(clip(text)),

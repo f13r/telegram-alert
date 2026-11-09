@@ -6,6 +6,13 @@ import type { Subscriber, Track } from './types.js';
 
 export const trackOf = (chatId: number): Track => (env.betaChatIds.has(chatId) ? 'beta' : 'stable');
 
+/**
+ * Who hears a track. Stable reaches everyone — beta chats too, so they can compare
+ * the two side by side; beta reaches beta chats only, marked as such (format.ts).
+ */
+export const audience = (subs: Subscriber[], track: Track): Subscriber[] =>
+    track === 'stable' ? subs : subs.filter((s) => trackOf(s.chatId) === 'beta');
+
 /** Subscribers who should get the same rendering of one alert. */
 export interface DeliveryGroup {
     /** Matched towns this group follows, in the order they were matched. */

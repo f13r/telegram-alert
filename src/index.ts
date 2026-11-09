@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { buildBot } from './bot.js';
 import { channelsConfig, env, towns } from './config.js';
-import { broadcast, groupByTowns, sendTo, trackOf } from './notify.js';
+import { audience, broadcast, groupByTowns, sendTo } from './notify.js';
 import { acquireLock } from './lock.js';
 import { handleMessage } from './pipeline.js';
 import { rotate } from './shadow.js';
@@ -42,8 +42,8 @@ async function main(): Promise<void> {
     };
 
     /**
-     * Alerts — each subscriber gets one message covering only the towns they follow,
-     * and only from their own track.
+     * Alerts — each subscriber gets one message covering only the towns they follow.
+     * Beta chats get stable's alert and, separately, beta's (marked).
      */
     const deliverTo = (track: Track) => async (
         decisions: Map<string, WindowDecision>,
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
         // Every delivered town is loud: pipeline.ts drops the rest before calling this.
         const matched = [...decisions.keys()];
         if (dryRun || getSubscribers().length === 0) return print(render(matched), false, track);
-        const subs = getSubscribers().filter((s) => trackOf(s.chatId) === track);
+        const subs = audience(getSubscribers(), track);
         // Not awaited: retries can take ~20 s and must not hold up the next post.
         void Promise.all(
             groupByTowns(subs, matched, followedTowns).map((g) =>

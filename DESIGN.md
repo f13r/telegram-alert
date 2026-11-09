@@ -382,8 +382,9 @@ BETA_CHAT_IDS=      # comma-separated chat ids on the beta track; empty = no bet
 
 **Beta track.** With `BETA_CHAT_IDS` set, every post runs through the pipeline a
 second time as `track: 'beta'`, with its own windows and alerted ids
-(`data.json` → `beta`) and its own log (`shadow-beta-YYYY-MM-DD.ndjson`). Beta
-chats get alerts only from the beta run, everyone else only from stable. New
+(`data.json` → `beta`) and its own log (`shadow-beta-YYYY-MM-DD.ndjson`). Stable
+alerts reach everyone, beta chats included; beta chats also get the beta run's alerts,
+each opening with «🧪 БЕТА — бачите лише ви», so a post can arrive twice — once per track. New
 behaviour goes in `pipeline.ts` behind `if (beta && …)`; promoting it to everyone
 means deleting the `beta &&`. A beta exception is caught and logged, and stable
 always runs first, so beta code cannot delay or break a stable alert.

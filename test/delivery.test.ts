@@ -11,7 +11,7 @@ process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ta-delivery-'));
 process.env.BETA_CHAT_IDS = ' 433221506, 5 ,';
 const { townById } = await import('../src/config.js');
 const { formatAlert } = await import('../src/format.js');
-const { groupByTowns, trackOf } = await import('../src/notify.js');
+const { audience, groupByTowns, trackOf } = await import('../src/notify.js');
 const { handleMessage } = await import('../src/pipeline.js');
 
 const sub = (chatId: number, off: string[] = []): Subscriber => ({ chatId, name: '', since: '', off });
@@ -379,4 +379,26 @@ test('beta channels: ignored by stable, confirm each other on beta, footer strip
     assert.equal(ids(`shadow-${day}.ndjson`).length, 0, 'not even shadow-logged on stable');
     const beta = ids(`shadow-beta-${day}.ndjson`);
     assert.equal(beta.find((e) => e.messageId === 1).matched, false, 'the footer\'s «ВІННИЦЯ» is not a town');
+});
+
+test('beta: stable alerts reach everyone, beta alerts only beta chats', () => {
+    const subs = [sub(1), sub(433221506), sub(2)];
+    assert.deepEqual(audience(subs, 'stable').map((s) => s.chatId), [1, 433221506, 2]);
+    assert.deepEqual(audience(subs, 'beta').map((s) => s.chatId), [433221506]);
+});
+
+test('beta: a beta alert opens with the beta mark, a stable one does not', async () => {
+    const now = Date.now() + 11 * 24 * 60 * 60_000;
+    const html: Record<string, string> = {};
+    const deps = (track: 'stable' | 'beta') => ({
+        track,
+        now: () => now,
+        deliver: async (d: Map<string, WindowDecision>, render: (t: string[]) => string) =>
+            void (html[track] = render([...d.keys()])),
+    });
+    const post = { channelUsername: 'kpszsu', channelTitle: '', messageId: 99101, date: new Date(now), text: 'БпЛА на Козятин', isEdit: false };
+    await handleMessage(post, deps('stable'));
+    await handleMessage(post, deps('beta'));
+    assert.match(html.beta, /^🧪 <b>БЕТА<\/b> — бачите лише ви\n🚨 <b>КОЗЯТИН<\/b>/);
+    assert.match(html.stable, /^🚨 <b>КОЗЯТИН<\/b>/);
 });

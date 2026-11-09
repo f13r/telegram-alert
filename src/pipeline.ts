@@ -115,6 +115,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
             text,
             cfg.label,
             towns.map((id) => ({ town: townById.get(id)!, d: decisions.get(id)! })),
+            beta,
         );
     await deps.deliver(decisions, render);
 
