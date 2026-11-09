@@ -8,9 +8,10 @@ import type { WindowDecision } from '../src/window.js';
 
 // pipeline.ts persists windows and the shadow log — keep them out of ./data.
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ta-delivery-'));
+process.env.BETA_CHAT_IDS = ' 433221506, 5 ,';
 const { townById } = await import('../src/config.js');
 const { formatAlert } = await import('../src/format.js');
-const { groupByTowns } = await import('../src/notify.js');
+const { groupByTowns, trackOf } = await import('../src/notify.js');
 const { handleMessage } = await import('../src/pipeline.js');
 
 const sub = (chatId: number, off: string[] = []): Subscriber => ({ chatId, name: '', since: '', off });
@@ -312,4 +313,70 @@ test('pipeline: local-channel news about last night is dropped and starts no coo
     // The next real threat goes out at once, not held by a news-started cooldown.
     await post('kpszsu', 83100, 'БпЛА на Вінницю');
     assert.deepEqual(delivered, ['kpszsu']);
+});
+
+test('beta: BETA_CHAT_IDS picks the beta track, everyone else stays stable', () => {
+    assert.equal(trackOf(433221506), 'beta');
+    assert.equal(trackOf(5), 'beta');
+    assert.equal(trackOf(1), 'stable');
+    assert.equal(trackOf(0), 'stable');
+});
+
+test('beta: each track has its own window and alerted ids, and its own shadow log', async () => {
+    // Each test takes its own future day, so earlier windows never interfere.
+    const now = Date.now() + 9 * 24 * 60 * 60_000;
+    const loud: Record<string, string[]> = { stable: [], beta: [] };
+    const deps = (track: 'stable' | 'beta') => ({
+        track,
+        now: () => now,
+        deliver: async (d: Map<string, WindowDecision>) => void loud[track].push(...d.keys()),
+    });
+    const post = { channelUsername: 'kpszsu', channelTitle: '', messageId: 99001, date: new Date(now), text: 'БпЛА на Ладижин', isEdit: false };
+
+    await handleMessage(post, deps('stable'));
+    await handleMessage(post, deps('beta'));
+    assert.deepEqual(loud, { stable: ['ladyzhyn'], beta: ['ladyzhyn'] });
+
+    // Stable's cooldown is not beta's: only the track that went loud is held.
+    await handleMessage({ ...post, messageId: 99002 }, deps('stable'));
+    assert.deepEqual(loud.stable, ['ladyzhyn']);
+
+    const day = new Date().toISOString().slice(0, 10); // shadow files are named by wall clock
+    const entries = (f: string) =>
+        fs.readFileSync(path.join(process.env.DATA_DIR!, f), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
+            .filter((e) => e.messageId === 99001);
+    assert.equal(entries(`shadow-${day}.ndjson`).length, 1);
+    assert.equal(entries(`shadow-beta-${day}.ndjson`).length, 1);
+});
+
+test('beta channels: ignored by stable, confirm each other on beta, footer stripped', async () => {
+    const now = Date.now() + 10 * 24 * 60 * 60_000;
+    const loud: Record<string, string[]> = { stable: [], beta: [] };
+    const deps = (track: 'stable' | 'beta') => ({
+        track,
+        now: () => now,
+        deliver: async (d: Map<string, WindowDecision>) => void loud[track].push(...d.keys()),
+    });
+    const post = (channelUsername: string, messageId: number, text: string) =>
+        ({ channelUsername, channelTitle: '', messageId, date: new Date(now), text, isEdit: false });
+    const footerOnly = post('ppo_vinnytsa', 1, '🟡ЗАГРОЗА БПЛА🟡\n\nПІДПИСАТИСЬ | ППО ВІННИЦЯ📡');
+    const tracker = post('ppo_vinnytsa', 2, '1х⚠️Погребище➡️Козятин\n\nПІДПИСАТИСЬ | ППО ВІННИЦЯ📡');
+    const chatty = post('vin_info_ppo', 3, 'Мордою на Козятин');
+
+    for (const m of [footerOnly, tracker, chatty]) await handleMessage(m, deps('stable'));
+    assert.deepEqual(loud.stable, [], 'stable never hears a beta channel');
+
+    await handleMessage(footerOnly, deps('beta'));
+    await handleMessage(tracker, deps('beta'));
+    assert.deepEqual(loud.beta, [], 'one beta channel alone only waits for confirmation');
+    await handleMessage(chatty, deps('beta'));
+    assert.deepEqual(loud.beta, ['koziatyn'], '80% + 50% = 90%: confirmed');
+
+    const day = new Date().toISOString().slice(0, 10);
+    const ids = (f: string) =>
+        fs.readFileSync(path.join(process.env.DATA_DIR!, f), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
+            .filter((e) => e.channel === 'ppo_vinnytsa' || e.channel === 'vin_info_ppo');
+    assert.equal(ids(`shadow-${day}.ndjson`).length, 0, 'not even shadow-logged on stable');
+    const beta = ids(`shadow-beta-${day}.ndjson`);
+    assert.equal(beta.find((e) => e.messageId === 1).matched, false, 'the footer\'s «ВІННИЦЯ» is not a town');
 });

@@ -49,7 +49,7 @@ function judge(cfg: ChannelCfg, raw: string): { text: string; verdict: Verdict; 
 /** Shadow-log posts of the local channels; an edit replaces the earlier text. */
 function shadowPosts(sinceMs: number): Post[] {
     const byKey = new Map<string, Post>();
-    const files = fs.readdirSync(env.dataDir).filter((f) => /^shadow-.*\.ndjson$/.test(f)).sort();
+    const files = fs.readdirSync(env.dataDir).filter((f) => /^shadow-\d{4}-\d{2}-\d{2}\.ndjson$/.test(f)).sort();
     for (const f of files) {
         for (const line of fs.readFileSync(path.join(env.dataDir, f), 'utf8').split('\n')) {
             if (!line) continue;

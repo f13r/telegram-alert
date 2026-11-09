@@ -92,3 +92,10 @@ test('/test: a landmark-only mention says why nothing is sent', () => {
 test('/test: a missile is flagged as passing a cooldown', () => {
     assert.match(testReport('2х крилаті ракети курсом на Вінницю'), /ракета\/КАБ/);
 });
+
+test('/test: beta channels are listed only for beta chats', () => {
+    assert.doesNotMatch(testReport('БпЛА на Козятин'), /ППО ВІННИЦЯ 📡|ППО у Вінницькій/);
+    const r = testReport('БпЛА на Козятин', true);
+    assert.match(r, /ППО ВІННИЦЯ 📡.*лише з підтвердженням.*80%/);
+    assert.match(r, /ППО у Вінницькій області.*лише з підтвердженням.*50%/);
+});

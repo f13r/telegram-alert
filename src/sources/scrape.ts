@@ -98,7 +98,10 @@ export class ScrapeSource implements MessageSource {
     private usable: ChannelCfg[] = [];
 
     async start(onMessage: (m: IncomingMessage) => Promise<void>): Promise<void> {
-        this.usable = channelsConfig.channels.filter((c) => c.webPreview !== false);
+        // Beta channels cost t.me requests for nobody while no chat is on beta.
+        this.usable = channelsConfig.channels.filter(
+            (c) => c.webPreview !== false && (!c.beta || env.betaChatIds.size > 0),
+        );
         for (const c of channelsConfig.channels) {
             if (c.webPreview === false) {
                 console.warn(`[scrape] @${c.username} has no public t.me/s page — skipped`);

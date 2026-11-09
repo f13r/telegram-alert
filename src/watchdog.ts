@@ -25,9 +25,9 @@ export function initWatchdog(now = Date.now(), only?: string[]): void {
     health.clear();
     reasons.clear();
     warned = false;
-    const watched = only?.length
-        ? channelsConfig.channels.filter((c) => only.includes(c.username))
-        : channelsConfig.channels;
+    // Beta channels are left out: one that keeps posting would hide a dead stable feed.
+    const stable = channelsConfig.channels.filter((c) => !c.beta);
+    const watched = only?.length ? stable.filter((c) => only.includes(c.username)) : stable;
     for (const c of watched) health.set(c.username, { lastOk: now, lastPost: now });
 }
 

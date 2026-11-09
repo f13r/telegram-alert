@@ -36,6 +36,8 @@ export interface ChannelCfg {
     localDistricts?: boolean;
     /** false = the channel has no public t.me/s page, so it cannot be read. */
     webPreview?: boolean;
+    /** Read only for the beta track (BETA_CHAT_IDS); stable never sees its posts. */
+    beta?: boolean;
 }
 
 export interface ChannelsConfig {
@@ -65,12 +67,25 @@ export interface WindowState {
     fastSources: Record<string, number>;
 }
 
-export interface StorageData {
-    subscribers: Subscriber[];
+/**
+ * Which pipeline a subscriber hears. `beta` runs every post through the same
+ * pipeline a second time, with its own state, for BETA_CHAT_IDS only — so a
+ * filter change can be tried on one chat before it reaches everyone.
+ */
+export type Track = 'stable' | 'beta';
+
+/** Pipeline state. Each track keeps its own, so a beta cooldown never holds stable. */
+export interface TrackState {
     /** townId → its threat window. */
     windows: Record<string, WindowState>;
     /** "channel:messageId:townId" → epoch ms, so an edit does not re-alert. */
     alertedIds: Record<string, number>;
+}
+
+/** The stable track's state sits at the top level, as it did before tracks existed. */
+export interface StorageData extends TrackState {
+    subscribers: Subscriber[];
+    beta: TrackState;
 }
 
 export interface TownMatch {

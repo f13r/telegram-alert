@@ -5,7 +5,7 @@ import { scanTowns } from './matcher.js';
 import { logMessage } from './shadow.js';
 import { getTownWindow, markAlerted, pruneAlerted, save, wasAlerted } from './storage.js';
 import { stripFooter } from './text.js';
-import type { IncomingMessage } from './types.js';
+import type { IncomingMessage, Track } from './types.js';
 import { recordMatch, type WindowDecision } from './window.js';
 
 export interface PipelineDeps {
@@ -15,6 +15,8 @@ export interface PipelineDeps {
      */
     deliver(decisions: Map<string, WindowDecision>, render: (towns: string[]) => string): Promise<void>;
     now?: () => number;
+    /** Default stable. The beta track keeps its own windows, alerted ids and shadow log. */
+    track?: Track;
 }
 
 /**
@@ -47,8 +49,11 @@ export interface PipelineDeps {
  */
 export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): Promise<void> {
     const now = deps.now?.() ?? Date.now();
+    const track = deps.track ?? 'stable';
+    // New behaviour goes behind `if (beta && …)` until it is promoted to everyone.
+    const beta = track === 'beta';
     const cfg = channelByUsername.get(msg.channelUsername.toLowerCase());
-    if (!cfg) return;
+    if (!cfg || (cfg.beta && !beta)) return;
 
     const text = stripFooter(msg.text, cfg.stripFooterPatterns);
     const scan = { local: cfg.localDistricts };
@@ -70,7 +75,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
             ...(landmarkOnly.length ? { landmarkOnly } : {}),
             ...(confidencePct ? { confidencePct } : {}),
             ...(dropped ? { dropped } : {}),
-        });
+        }, track);
 
     if (matches.length === 0) return log(landmarkOnly.length ? 'reference-point' : undefined);
 
@@ -87,10 +92,10 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
         // An edit that turns the post into a missile post is new information: it
         // must pass a cooldown that held the original, so it is let through once.
         const isFast = fast.has(m.townId);
-        if (wasAlerted(key) && (!isFast || wasAlerted(`${key}:fast`))) continue;
-        decisions.set(m.townId, recordMatch(getTownWindow(m.townId), cfg.username, isFast, now));
-        markAlerted(key);
-        if (isFast) markAlerted(`${key}:fast`);
+        if (wasAlerted(key, track) && (!isFast || wasAlerted(`${key}:fast`, track))) continue;
+        decisions.set(m.townId, recordMatch(getTownWindow(m.townId, track), cfg.username, isFast, now));
+        markAlerted(key, track);
+        if (isFast) markAlerted(`${key}:fast`, track);
     }
     if (decisions.size === 0) return log('already-alerted');
     pruneAlerted();
@@ -117,7 +122,7 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
         const d = decisions.get(m.townId);
         if (!d) continue;
         console.log(
-            `[alert] LOUD   ${d.confidencePct}% ${d.sourceCount} src  ` +
+            `[alert${beta ? ':beta' : ''}] LOUD   ${d.confidencePct}% ${d.sourceCount} src  ` +
                 `${m.townId}  @${msg.channelUsername}  «${m.form}»`,
         );
     }

@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { channelsConfig, env, towns } from './config.js';
-import type { StorageData, Subscriber, WindowState } from './types.js';
+import type { StorageData, Subscriber, Track, TrackState, WindowState } from './types.js';
 
 const FILE = path.join(env.dataDir, 'data.json');
 const ALERTED_TTL_MS = 24 * 60 * 60 * 1000;
 
 const EMPTY_WINDOW: WindowState = { loudAt: null, sources: {}, fastSources: {} };
-const DEFAULT: StorageData = { subscribers: [], windows: {}, alertedIds: {} };
+const DEFAULT: StorageData = { subscribers: [], windows: {}, alertedIds: {}, beta: { windows: {}, alertedIds: {} } };
 
 /** Before cooldowns: a sliding window that announced at most once per raid. */
 interface LegacyWindow {
@@ -18,7 +18,14 @@ interface LegacyWindow {
 type StoredWindow = Partial<WindowState> & Partial<LegacyWindow>;
 
 /** data.json written before towns existed has a single `window` — it was Вінниця's. */
-type LegacyData = Omit<Partial<StorageData>, 'windows'> & { windows?: Record<string, StoredWindow>; window?: StoredWindow };
+type LegacyData = Omit<Partial<StorageData>, 'windows' | 'beta'> & {
+    windows?: Record<string, StoredWindow>;
+    window?: StoredWindow;
+    beta?: { windows?: Record<string, StoredWindow>; alertedIds?: Record<string, number> };
+};
+
+const migrateWindows = (stored: Record<string, StoredWindow>): Record<string, WindowState> =>
+    Object.fromEntries(Object.entries(stored).map(([id, w]) => [id, migrateWindow(w)]));
 
 /**
  * A pre-cooldown window that already went loud counts as loud at its last match —
@@ -38,11 +45,17 @@ function load(): StorageData {
         if (!fs.existsSync(FILE)) return structuredClone(DEFAULT);
         const parsed = JSON.parse(fs.readFileSync(FILE, 'utf8')) as LegacyData;
         const stored = parsed.windows ?? (parsed.window ? { vinnytsia: parsed.window } : {});
-        const windows = Object.fromEntries(Object.entries(stored).map(([id, w]) => [id, migrateWindow(w)]));
+        const windows = migrateWindows(stored);
+        const alertedIds = parsed.alertedIds ?? {};
         return {
             subscribers: parsed.subscribers ?? [],
             windows,
-            alertedIds: parsed.alertedIds ?? {},
+            alertedIds,
+            // First boot with tracks: beta starts as a copy of stable, so it neither
+            // re-alerts edits stable already sent nor ignores a cooldown in progress.
+            beta: parsed.beta
+                ? { windows: migrateWindows(parsed.beta.windows ?? {}), alertedIds: parsed.beta.alertedIds ?? {} }
+                : structuredClone({ windows, alertedIds }),
         };
     } catch (e) {
         // Move the bad file aside first: the next persist() would otherwise
@@ -110,9 +123,11 @@ export function toggleTown(chatId: number, townId: string): boolean | null {
     return nowOn;
 }
 
+const stateOf = (track: Track): TrackState => (track === 'beta' ? data.beta : data);
+
 /** The live window object for a town — mutate it, then save(). */
-export function getTownWindow(townId: string): WindowState {
-    return (data.windows[townId] ??= structuredClone(EMPTY_WINDOW));
+export function getTownWindow(townId: string, track: Track = 'stable'): WindowState {
+    return (stateOf(track).windows[townId] ??= structuredClone(EMPTY_WINDOW));
 }
 
 /** Write windows and alerted ids — once per post, after every change to them. */
@@ -120,19 +135,21 @@ export function save(): void {
     persist();
 }
 
-export function wasAlerted(key: string): boolean {
-    return key in data.alertedIds;
+export function wasAlerted(key: string, track: Track = 'stable'): boolean {
+    return key in stateOf(track).alertedIds;
 }
 
 /** In memory only; save() writes it. */
-export function markAlerted(key: string): void {
-    data.alertedIds[key] = Date.now();
+export function markAlerted(key: string, track: Track = 'stable'): void {
+    stateOf(track).alertedIds[key] = Date.now();
 }
 
-/** Drop alerted ids older than a day. In memory only; save() writes it. */
+/** Drop alerted ids older than a day, on both tracks. In memory only; save() writes it. */
 export function pruneAlerted(now = Date.now()): void {
     const cutoff = now - ALERTED_TTL_MS;
-    for (const [k, ts] of Object.entries(data.alertedIds)) {
-        if (ts < cutoff) delete data.alertedIds[k];
+    for (const ids of [data.alertedIds, data.beta.alertedIds]) {
+        for (const [k, ts] of Object.entries(ids)) {
+            if (ts < cutoff) delete ids[k];
+        }
     }
 }

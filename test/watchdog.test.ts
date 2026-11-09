@@ -93,3 +93,11 @@ test('a cause recorded in an old outage is not reused once the channel reads aga
     assert.equal(w.kind, 'all-unreadable');
     assert.doesNotMatch(w.text, /вебпревʼю/);
 });
+
+test('beta channels are not watched: they cannot hide a dead stable feed', () => {
+    initWatchdog(T0);
+    for (const u of ALL) recordOk(u, T0 + 8 * HOUR);
+    recordPost('ppo_vinnytsa', T0 + 8 * HOUR);
+    recordPost('vin_info_ppo', T0 + 8 * HOUR);
+    assert.equal(checkWatchdog(T0 + 8 * HOUR)[0]?.kind, 'all-quiet');
+});

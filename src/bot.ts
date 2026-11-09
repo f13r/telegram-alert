@@ -2,6 +2,7 @@ import { Telegraf } from 'telegraf';
 import { channelsConfig, env, townById, towns } from './config.js';
 import { fastTowns, isNews, isThreatReport } from './danger.js';
 import { scanTowns } from './matcher.js';
+import { trackOf } from './notify.js';
 import {
     addSubscriber,
     followedTowns,
@@ -56,7 +57,7 @@ export function onTownTap(chatId: number, townId: string): { answer: string; cha
  * the first post about the town — the same rules as pipeline.ts, so it never
  * promises an alert that would not come.
  */
-export function testReport(text: string): string {
+export function testReport(text: string, beta = false): string {
     // Districts are scanned too; channels without localDistricts are told apart below.
     const { matches, landmarkOnly } = scanTowns(text, { local: true });
     const districtsOnly = matches.every((m) => m.district);
@@ -70,7 +71,7 @@ export function testReport(text: string): string {
 
     if (fastTowns(text, matches.map((m) => m.townId), { local: true }).length) lines.push('🚀 ракета/КАБ — пройде й під час 15-хв паузи');
     lines.push('', '<i>якщо це перший допис про місто:</i>');
-    for (const c of channelsConfig.channels) {
+    for (const c of channelsConfig.channels.filter((ch) => beta || !ch.beta)) {
         const verdict =
             districtsOnly && !c.localDistricts
                 ? '✗ район — лише для місцевих каналів'
@@ -157,7 +158,7 @@ export function buildBot(sourceName: string): Telegraf {
             [
                 `<b>Статус</b>`,
                 `джерело: ${sourceName}`,
-                `канали: ${channelsConfig.channels.length}`,
+                `канали: ${channelsConfig.channels.filter((c) => trackOf(ctx.chat.id) === 'beta' || !c.beta).length}`,
                 `підписників: ${getSubscribers().length}`,
                 `аптайм: ${uptime()}`,
                 `ваші міста: ${escapeHtml(mine)}`,
@@ -173,7 +174,7 @@ export function buildBot(sourceName: string): Telegraf {
         const text = ctx.message.text.replace(/^\/test(@\S+)?\s*/, '');
         if (!text) return ctx.reply('Використання: /test <текст повідомлення>');
 
-        await ctx.replyWithHTML(testReport(text));
+        await ctx.replyWithHTML(testReport(text, trackOf(ctx.chat.id) === 'beta'));
     });
 
     return bot;

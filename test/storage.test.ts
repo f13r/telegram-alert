@@ -16,7 +16,7 @@ fs.writeFileSync(
             { chatId: 2, name: 'b', since: 'x', off: ['gone-town'] },
         ],
         window: { openedAt: 10, lastMatchAt: 20, sources: { kpszsu: 20 }, announcedPct: 90 },
-        alertedIds: {},
+        alertedIds: { 'kpszsu:1:vinnytsia': 20 },
     }),
 );
 const s = await import('../src/storage.js');
@@ -25,6 +25,16 @@ const ALL = ['vinnytsia', 'ladyzhyn', 'koziatyn'];
 test('legacy window migrates to windows.vinnytsia; an announced raid counts as loud at its last match', () => {
     assert.deepEqual(s.getTownWindow('vinnytsia'), { loudAt: 20, sources: {}, fastSources: {} });
     assert.equal(s.getTownWindow('koziatyn').loudAt, null);
+});
+
+test('first boot with tracks: beta starts as a copy of stable, then goes its own way', () => {
+    assert.deepEqual(s.getTownWindow('vinnytsia', 'beta'), { loudAt: 20, sources: {}, fastSources: {} });
+    assert.equal(s.wasAlerted('kpszsu:1:vinnytsia', 'beta'), true);
+    s.getTownWindow('vinnytsia', 'beta').loudAt = 99;
+    s.markAlerted('beta-only', 'beta');
+    assert.equal(s.getTownWindow('vinnytsia').loudAt, 20);
+    assert.equal(s.wasAlerted('beta-only'), false);
+    s.getTownWindow('vinnytsia', 'beta').loudAt = 20;
 });
 
 test('legacy subscriber follows every town', () => {

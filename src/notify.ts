@@ -1,7 +1,10 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import type { Telegraf } from 'telegraf';
+import { env } from './config.js';
 import { getSubscribers, removeSubscriber } from './storage.js';
-import type { Subscriber } from './types.js';
+import type { Subscriber, Track } from './types.js';
+
+export const trackOf = (chatId: number): Track => (env.betaChatIds.has(chatId) ? 'beta' : 'stable');
 
 /** Subscribers who should get the same rendering of one alert. */
 export interface DeliveryGroup {

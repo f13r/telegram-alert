@@ -24,6 +24,13 @@ export const env = {
     shadowRetentionDays: num('SHADOW_RETENTION_DAYS', 7),
     /** scrape (t.me/s preview pages) | fake (replays fixtures, for testing) */
     source: process.env.SOURCE ?? 'scrape',
+    /** Chats on the beta track (comma-separated) — see Track in types.ts. Empty = no beta track. */
+    betaChatIds: new Set(
+        (process.env.BETA_CHAT_IDS ?? '')
+            .split(',')
+            .map((s) => Number(s.trim()))
+            .filter((n) => Number.isInteger(n) && n !== 0),
+    ),
 };
 
 export interface Vocabulary {

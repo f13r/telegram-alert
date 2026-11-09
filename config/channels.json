@@ -60,7 +60,32 @@
         "(?:\\p{Extended_Pictographic}\\uFE0F?[^\\S\\n]*)?Підписатись на ППО(?:\\s+Вінниця)?"
       ],
       "webPreview": true
+    },
+    {
+      "username": "ppo_vinnytsa",
+      "label": "ППО ВІННИЦЯ 📡",
+      "reliability": 0.8,
+      "requiresThreat": false,
+      "rejectNews": true,
+      "localDistricts": true,
+      "stripFooterPatterns": [
+        "\\s*ПІДПИСАТИСЬ\\s*\\|\\s*ППО ВІННИЦЯ\\S*"
+      ],
+      "webPreview": true,
+      "beta": true
+    },
+    {
+      "username": "vin_info_ppo",
+      "label": "ППО у Вінницькій області",
+      "reliability": 0.5,
+      "requiresThreat": false,
+      "rejectNews": true,
+      "localDistricts": true,
+      "stripFooterPatterns": [],
+      "webPreview": true,
+      "beta": true
     }
   ],
+  "_beta": "true = only the beta track (BETA_CHAT_IDS in .env) reads this channel. Stable subscribers, the watchdog and the stable shadow log never see it. Not scraped at all while BETA_CHAT_IDS is empty.",
   "_webPreview": "false = channel genuinely publishes no t.me/s page. A transient 302 is NOT this — it recovers on its own, is handled by backoff, and is logged as [scrape:302]."
 }

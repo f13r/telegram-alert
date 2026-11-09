@@ -258,8 +258,18 @@ from fresh posts only.
 | `@war_monitor` | air-threat tracking | 0.9 | no |
 | `@vinnitsa_vinnistya` | **general local news** | 0.5 | **yes** + news filter + footer stripping |
 | `@vinnytsiappo` | local air-threat tracking, posts news too | 0.8 | news filter + footer stripping |
+| `@ppo_vinnytsa` | **beta only** — local tracker, `1х⚠️Погребище➡️Козятин` | 0.8 | news filter + footer stripping |
+| `@vin_info_ppo` | **beta only** — local tracking, chatty (~4% non-threats) | 0.5 | news filter |
 
-All five are public and read through their `t.me/s/` pages — no subscription needed. A
+The two beta channels were audited on 2026-11-09 against 35 days of history
+(Oct 5 – Nov 9). `@ppo_vinnytsa`: 229 town posts, all live tracking; every post ends in
+«ПІДПИСАТИСЬ | ППО ВІННИЦЯ📡», which must be stripped or it matches Вінниця.
+`@vin_info_ppo`: 391 town posts, ~17 not threats («Вінниця, свої в небі», «Ладижин
+почули»), hence 0.5 — it can confirm `@ppo_vinnytsa` or ППО Вінниця (90%), but not
+Типова alone (75%). Neither uses the danger filter: their live posts rarely carry a
+threat word («Мордою на Козятин»), so it would have dropped most of them.
+
+The first five are public and read through their `t.me/s/` pages — no subscription needed. A
 channel without a web preview (`webPreview: false`) cannot be read at all.
 
 ## 4. Threat window
@@ -367,7 +377,16 @@ DATA_DIR=./data
 COOLDOWN_MIN=15
 FRESHNESS_MIN=10
 SHADOW_RETENTION_DAYS=7
+BETA_CHAT_IDS=      # comma-separated chat ids on the beta track; empty = no beta
 ```
+
+**Beta track.** With `BETA_CHAT_IDS` set, every post runs through the pipeline a
+second time as `track: 'beta'`, with its own windows and alerted ids
+(`data.json` → `beta`) and its own log (`shadow-beta-YYYY-MM-DD.ndjson`). Beta
+chats get alerts only from the beta run, everyone else only from stable. New
+behaviour goes in `pipeline.ts` behind `if (beta && …)`; promoting it to everyone
+means deleting the `beta &&`. A beta exception is caught and logged, and stable
+always runs first, so beta code cannot delay or break a stable alert.
 
 `.env` is gitignored. `BOT_TOKEN` lets anyone send as the bot — never commit or paste it.
 

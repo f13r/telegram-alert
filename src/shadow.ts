@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { env } from './config.js';
+import type { Track } from './types.js';
 
 export interface ShadowEntry {
     ts: string;
@@ -22,8 +23,9 @@ export interface ShadowEntry {
     dropped?: string;
 }
 
-const fileFor = (d: Date) =>
-    path.join(env.dataDir, `shadow-${d.toISOString().slice(0, 10)}.ndjson`);
+/** Beta gets its own file, so the stable log stays one line per post. */
+const fileFor = (d: Date, track: Track) =>
+    path.join(env.dataDir, `shadow-${track === 'beta' ? 'beta-' : ''}${d.toISOString().slice(0, 10)}.ndjson`);
 
 /**
  * Every message from every monitored channel, matched or not. This is how a
@@ -31,10 +33,10 @@ const fileFor = (d: Date) =>
  *
  *   grep -i 'вінн\|ладиж\|козят' data/shadow-*.ndjson | jq 'select(.matched==false)'
  */
-export function logMessage(entry: ShadowEntry): void {
+export function logMessage(entry: ShadowEntry, track: Track = 'stable'): void {
     try {
         fs.mkdirSync(env.dataDir, { recursive: true });
-        fs.appendFileSync(fileFor(new Date()), JSON.stringify(entry) + '\n');
+        fs.appendFileSync(fileFor(new Date(), track), JSON.stringify(entry) + '\n');
     } catch (e) {
         console.error('[shadow]', (e as Error).message);
     }
@@ -45,8 +47,9 @@ export function rotate(): void {
     try {
         const cutoff = Date.now() - env.shadowRetentionDays * 24 * 60 * 60 * 1000;
         for (const f of fs.readdirSync(env.dataDir)) {
-            if (!/^shadow-\d{4}-\d{2}-\d{2}\.ndjson$/.test(f)) continue;
-            const day = Date.parse(f.slice(7, 17));
+            const m = /^shadow-(?:beta-)?(\d{4}-\d{2}-\d{2})\.ndjson$/.exec(f);
+            if (!m) continue;
+            const day = Date.parse(m[1]);
             if (Number.isFinite(day) && day < cutoff) {
                 fs.unlinkSync(path.join(env.dataDir, f));
                 console.log(`[shadow] removed ${f}`);
