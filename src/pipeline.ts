@@ -1,5 +1,5 @@
 import { channelByUsername, channelsConfig, env, townById } from './config.js';
-import { fastTowns, isNews, isThreatReport } from './danger.js';
+import { fastTowns, isExplosionOnly, isNews, isShotDownOnly, isThreatReport } from './danger.js';
 import { formatAlert } from './format.js';
 import { scanTowns } from './matcher.js';
 import { logMessage } from './shadow.js';
@@ -30,6 +30,8 @@ export interface PipelineDeps {
  *   news            → a local channel reporting an attack that is over («внаслідок
  *                     удару… постраждали») is dropped before the window, so it
  *                     neither alerts nor starts a cooldown
+ *   explosion-only  → «Вибух» with no flight wording: already happened, so it neither
+ *                     alerts nor corroborates a later threat post
  *   already alerted → an edit does not re-notify for a town it already alerted;
  *                     an edit that adds a town alerts for that town only; an edit
  *                     that adds missile/КАБ wording is evaluated once more
@@ -75,6 +77,9 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
     if (now - msg.date.getTime() > env.freshnessMin * 60_000) return log('stale');
     if (cfg.requiresThreat && !danger) return log('not-danger');
     if (cfg.rejectNews && isNews(text)) return log('news');
+
+    if (isExplosionOnly(text) && fast.size === 0) return log('explosion-only');
+    if (isShotDownOnly(text) && fast.size === 0) return log('shot-down');
 
     const decisions = new Map<string, WindowDecision>();
     for (const m of matches) {

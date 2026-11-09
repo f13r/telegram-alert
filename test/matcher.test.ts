@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { channelsConfig, fastThreatKeywords, newsKeywords, threatKeywords } from '../src/config.js';
-import { isDanger, isFastThreat, isNews } from '../src/danger.js';
+import { isDanger, isExplosionOnly, isShotDownOnly, isFastThreat, isNews } from '../src/danger.js';
 import { stripFooter } from '../src/text.js';
 import { recordMatch } from '../src/window.js';
 import type { WindowState } from '../src/types.js';
@@ -233,4 +233,14 @@ test('latin: invisible characters and stress marks do not hide a town', () => {
     for (const t of ['Drones heading to Vinny\u00ADtsia', 'Missile over Vinnytsia\u200B', 'UAV near Vinny\u0301tsia']) {
         assert.deepEqual(matchTowns(t).map((m) => m.townId), ['vinnytsia'], t);
     }
+});
+
+test('explosion-only posts are told apart from live threats', () => {
+    for (const s of ['Вінниця Вибух 💥', 'Вибухи у Вінниці']) assert.ok(isExplosionOnly(s), s);
+    for (const s of ['БпЛА на Вінницю', 'Вибух, дорозвідка по БпЛА', '🛵 Шахед на Вінницю, чути вибухи']) assert.ok(!isExplosionOnly(s), s);
+});
+
+test('shot-down-only posts are not threats', () => {
+    for (const s of ['Попередньо збитий, у передмісті Вінниці.', 'Збито над Вінницею']) assert.ok(isShotDownOnly(s), s);
+    for (const s of ['БпЛА на Вінницю', 'Збитий, ще один шахед на Вінницю']) assert.ok(!isShotDownOnly(s), s);
 });

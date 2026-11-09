@@ -34,6 +34,30 @@ export function isThreatReport(text: string): boolean {
     return t.length <= MAX_REPORT_CHARS && !/\n\s*\n/.test(t) && isDanger(t);
 }
 
+/**
+ * An explosion report with no flight wording — «Вінниця Вибух 💥». The blast already
+ * happened, so it says nothing about a drone still inbound and must not corroborate
+ * a later threat post in the town's window (2026-10-31: ППО «Вибух» + Типова
+ * «БпЛА на Вінницю» went loud after the drone had moved on to Козятин).
+ */
+const explosionSrc = '(?<![\\p{L}\\p{N}])(?:вибух|взрыв)\\p{L}*';
+const explosionRe = new RegExp(explosionSrc, 'u');
+export function isExplosionOnly(text: string): boolean {
+    const t = normalize(text);
+    return explosionRe.test(t) && !dangerRe.test(t.replace(new RegExp(explosionSrc, 'gu'), ' '));
+}
+
+/**
+ * A «збитий / знищено» report with no flight wording — «Попередньо збитий, у передмісті
+ * Вінниці». The threat is over, so it must not raise a loud alert (2026-11-06).
+ */
+const shotSrc = '(?<![\\p{L}\\p{N}])(?:збит|сбит|знищен|уражен)\\p{L}*';
+const shotRe = new RegExp(shotSrc, 'u');
+export function isShotDownOnly(text: string): boolean {
+    const t = normalize(text);
+    return shotRe.test(t) && !dangerRe.test(t.replace(new RegExp(shotSrc, 'gu'), ' '));
+}
+
 /** Missile or КАБ wording — passes a town's cooldown. Applied to every channel. */
 export function isFastThreat(text: string): boolean {
     return fastRe.test(normalize(text));
