@@ -10,8 +10,15 @@ export interface WindowDecision {
     sourceCount: number;
 }
 
-const reliabilityOf = (username: string): number =>
-    channelByUsername.get(username.toLowerCase())?.reliability ?? 0;
+/** Pool key of a post that only points toward the town: it counts for half. */
+const VAGUE = '~vague';
+const VAGUE_RELIABILITY = 0.5;
+
+const reliabilityOf = (key: string): number => {
+    const vague = key.endsWith(VAGUE);
+    const r = channelByUsername.get((vague ? key.slice(0, -VAGUE.length) : key).toLowerCase())?.reliability ?? 0;
+    return vague ? Math.min(r, VAGUE_RELIABILITY) : r;
+};
 
 /**
  * Record a match and decide whether it is delivered.
@@ -23,7 +30,7 @@ const reliabilityOf = (username: string): number =>
  *  - Every loud alert clears the corroboration, so after a cooldown confidence is
  *    built from fresh posts only — Типова Вінниця alone still needs a reliable channel.
  */
-export function recordMatch(state: WindowState, username: string, fast: boolean, now = Date.now()): WindowDecision {
+export function recordMatch(state: WindowState, username: string, fast: boolean, now = Date.now(), vague = false): WindowDecision {
     const cooldownMs = env.cooldownMin * 60_000;
     const corrMs = channelsConfig.correlationWindowMin * 60_000;
     const threshold = channelsConfig.loudThresholdPct;
@@ -37,10 +44,18 @@ export function recordMatch(state: WindowState, username: string, fast: boolean,
         if (now - ts > corrMs) delete pool[u];
     }
     const counted = !inCooldown || fast;
-    if (counted) pool[username] = now;
+    const key = vague ? username + VAGUE : username;
+    if (counted) pool[key] = now;
 
-    const names = new Set([...Object.keys(pool), username]);
-    const product = [...names].reduce((acc, u) => acc * (1 - reliabilityOf(u)), 1);
+    // One channel counts once, at its best reliability: a vague post plus a direct one
+    // from the same channel is still a single source.
+    const best = new Map<string, number>();
+    for (const k of new Set([...Object.keys(pool), key])) {
+        const base = k.endsWith(VAGUE) ? k.slice(0, -VAGUE.length) : k;
+        best.set(base, Math.max(best.get(base) ?? 0, reliabilityOf(k)));
+    }
+    const names = new Set(best.keys());
+    const product = [...best.values()].reduce((acc, r) => acc * (1 - r), 1);
     const confidencePct = Math.round((1 - product) * 100);
     const loud = counted && confidencePct >= threshold;
 

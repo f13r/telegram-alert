@@ -1,0 +1,80 @@
+{
+  "id": "voronovytsia",
+  "name": "Вороновиця",
+  "header": "ВОРОНОВИЦЯ",
+  "order": 4,
+  "_about": "Settlement Вороновиця (смт, Вінницький р-н, Вінницька обл.). SETTLEMENT ONLY. Russian: Вороновица.",
+  "_sources": [
+    "https://uk.wikipedia.org/wiki/Вороновиця",
+    "Shadow logs 2026-11-11..16 and history-*.ndjson: all 7 channels write «Вороновицю / Вороновиці / Вороновиця»; no other spelling seen."
+  ],
+  "_endings": "Feminine -иця (declines like Вінниця): stem + 0-2 letters covers Вороновиця/-ці/-цю/-цею/-це and Russian -цы/-цу/-цей. The adjective (Вороновицький, Вороновицька) is stem + 3+ and is excluded structurally.",
+  "targets": [
+    {
+      "id": "voronovytsia-uk",
+      "label": "Вороновиця (українською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "regex": "(?<!\\p{L})вороновиц\\p{L}{0,2}(?!\\p{L})"
+    },
+    {
+      "id": "voronovytsia-ru",
+      "label": "Вороновица (російською)",
+      "script": "cyrillic",
+      "matchOn": "normalized",
+      "regex": "(?<!\\p{L})вороновиц\\p{L}{0,2}(?!\\p{L})"
+    },
+    {
+      "id": "voronovytsia-latin",
+      "label": "Voronovytsia (latin)",
+      "script": "latin",
+      "matchOn": "raw",
+      "literals": [
+        "Voronovytsia",
+        "Voronovytsya",
+        "Voronovytsja",
+        "Voronovitsa",
+        "Voronovitsya",
+        "Voronovitza",
+        "Voronovica",
+        "Woronowica",
+        "Voronovicja"
+      ],
+      "negativeLookahead": "\\s*(?:oblast|oblasts|region|regional|raion|rayon|district|area|province|hromada|community)\\b"
+    }
+  ],
+  "excluded": {
+    "_why": "Share the stem but are not the settlement.",
+    "adjective": [
+      "Вороновицька",
+      "Вороновицький",
+      "Вороновицького",
+      "Вороновицької"
+    ],
+    "_mechanism": "Cyrillic adjectives need 3+ trailing letters, so maxSuffix 2 drops them. Latin needs the negativeLookahead."
+  },
+  "fixtures": {
+    "shouldMatch": [
+      "🛵 1 Реактивний Шахед на Вороновицю",
+      "🛵 Реактивний Шахед через Іллінці в напрямку Вороновиці / Гуменного",
+      "1х⚠️Ситківці➡️Вороновиця",
+      "1х⚠️Вороновиця➡️Турбів🚨",
+      "Реактивний БпЛА курсом на Вороновицю",
+      "🛵 1 Реактивний Шахед на ВОРОНОВИЦЮ",
+      "Вороновиця не лякайся",
+      "над Вороновицею",
+      "Вороно́виця",
+      "взрыв в Вороновице",
+      "на Вороновицу",
+      "Voronovytsia",
+      "drone over Voronovitsa"
+    ],
+    "shouldNotMatch": [
+      "Вороновицька громада",
+      "Вороновицький старостинський округ",
+      "на Вороновицьку громаду",
+      "Voronovytsia hromada",
+      "Voronovytsia district"
+    ]
+  }
+}

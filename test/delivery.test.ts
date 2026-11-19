@@ -51,7 +51,7 @@ test('format: single Вінниця alert unchanged', () => {
     ]);
     assert.equal(
         html,
-        '🚨 <b>ВІННИЦЯ</b> · 95%\n\nтекст\n\n' +
+        '🚨 <b>ВІННИЦЯ</b>\n\nтекст\n\n' +
             '<i>ПС ЗСУ · 14:02 · підтверджено (2 джерела) · <a href="https://t.me/kpszsu/7">відкрити</a></i>',
     );
 });
@@ -61,7 +61,7 @@ test('format: two towns in one header, each with its confidence', () => {
         { town: townById.get('ladyzhyn')!, d: dec(95, true) },
         { town: townById.get('koziatyn')!, d: dec(90, true) },
     ]);
-    assert.equal(html.split('\n')[0], '🚨 <b>ЛАДИЖИН</b> 95% · <b>КОЗЯТИН</b> 90%');
+    assert.equal(html.split('\n')[0], '🚨 <b>ЛАДИЖИН</b> · <b>КОЗЯТИН</b>');
     assert.doesNotMatch(html.split('\n').at(-1)!, /джерел/);
 });
 
@@ -153,7 +153,7 @@ test('pipeline: Типова Вінниця alone is held back until another cha
         deps,
     );
     assert.deepEqual(calls.map((c) => c.towns), [['koziatyn']]);
-    assert.match(calls[0].html, /95%/);
+    assert.match(calls[0].html, /підтверджено/);
     assert.match(calls[0].html, /підтверджено \(2 джерела\)/);
 });
 
@@ -190,7 +190,7 @@ test('pipeline: 15 min cooldown — the 03.10 Ладижин sequence sends at 0
     await post(0.5, 'vinnitsa_vinnistya', 41311, 'Реактивний БпЛА в напрямку Ладижина');
     await post(8, 'ukraine_pyxx', 93971, 'Вінниччина:\nБпЛА курсом на Ладижин.');
     assert.equal(sent.length, 1, 'inside the cooldown');
-    assert.match(sent[0], /^🚨 <b>ЛАДИЖИН<\/b> · 90%/);
+    assert.match(sent[0], /^🚨 <b>ЛАДИЖИН<\/b>/);
 
     await post(24, 'kpszsu', 82498, '🏍 Вінниччина: реактивний БпЛА в напрямку Ладижина.');
     assert.equal(sent.length, 2, '24 min after the loud alert the cooldown is over');

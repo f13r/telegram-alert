@@ -1,5 +1,5 @@
 import { channelByUsername, channelsConfig, env, townById } from './config.js';
-import { fastTowns, isExplosionOnly, isNews, isShotDownOnly, isThreatReport } from './danger.js';
+import { fastTowns, isExplosionOnly, isNews, isShotDownOnly, isThreatReport, isVagueDirection } from './danger.js';
 import { formatAlert } from './format.js';
 import { scanTowns } from './matcher.js';
 import { logMessage } from './shadow.js';
@@ -37,6 +37,8 @@ export interface PipelineDeps {
  *   already alerted → an edit does not re-notify for a town it already alerted;
  *                     an edit that adds a town alerts for that town only; an edit
  *                     that adds missile/КАБ wording is evaluated once more
+ *   vague           → a channel with vagueNeedsSecondSource («у бік Вінниці») counts 0.5
+ *                     for that town, so it needs a second channel to go loud
  *   unconfirmed     → below loudThresholdPct (Типова Вінниця or ППО Вінниця alone)
  *                     is recorded in the window but never delivered; it only adds
  *                     confidence once another channel reports the same town
@@ -93,7 +95,10 @@ export async function handleMessage(msg: IncomingMessage, deps: PipelineDeps): P
         // must pass a cooldown that held the original, so it is let through once.
         const isFast = fast.has(m.townId);
         if (wasAlerted(key, track) && (!isFast || wasAlerted(`${key}:fast`, track))) continue;
-        decisions.set(m.townId, recordMatch(getTownWindow(m.townId, track), cfg.username, isFast, now));
+        decisions.set(m.townId, recordMatch(
+            getTownWindow(m.townId, track), cfg.username, isFast, now,
+            !!cfg.vagueNeedsSecondSource && isVagueDirection(text, m.form),
+        ));
         markAlerted(key, track);
         if (isFast) markAlerted(`${key}:fast`, track);
     }

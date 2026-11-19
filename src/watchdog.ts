@@ -10,6 +10,8 @@ interface Health {
     lastOk: number;
     /** Last time a NEW post appeared. */
     lastPost: number;
+    /** Shown in /status, but never counted by checkWatchdog. */
+    beta?: boolean;
 }
 
 export interface Warning {
@@ -25,10 +27,8 @@ export function initWatchdog(now = Date.now(), only?: string[]): void {
     health.clear();
     reasons.clear();
     warned = false;
-    // Beta channels are left out: one that keeps posting would hide a dead stable feed.
-    const stable = channelsConfig.channels.filter((c) => !c.beta);
-    const watched = only?.length ? stable.filter((c) => only.includes(c.username)) : stable;
-    for (const c of watched) health.set(c.username, { lastOk: now, lastPost: now });
+    const watched = only?.length ? channelsConfig.channels.filter((c) => only.includes(c.username)) : channelsConfig.channels;
+    for (const c of watched) health.set(c.username, { lastOk: now, lastPost: now, beta: c.beta });
 }
 
 export function recordOk(username: string, now = Date.now()): void {
@@ -65,9 +65,10 @@ const hours = (ms: number) => Math.floor(ms / HOUR);
  * Per-channel problems are visible in /status and the log instead.
  */
 export function checkWatchdog(now = Date.now()): Warning[] {
-    if (health.size === 0) return [];
+    // Beta channels are left out: one that keeps posting would hide a dead stable feed.
+    const entries = [...health.entries()].filter(([, h]) => !h.beta);
+    if (entries.length === 0) return [];
 
-    const entries = [...health.entries()];
     const allUnreadable = entries.every(([, h]) => now - h.lastOk > parseStaleMs);
     const allQuiet = entries.every(([, h]) => now - h.lastPost > quietMs);
     const degraded = allUnreadable || allQuiet;
@@ -112,7 +113,7 @@ export function healthReport(now = Date.now()): string {
             const readable = now - h.lastOk <= parseStaleMs;
             const since = hours(now - h.lastPost);
             const age = since >= 1 ? `${since} год тому` : 'щойно';
-            return `${readable ? '✓' : '✗'} @${u} — останній допис ${age}`;
+            return `${readable ? '✓' : '✗'} @${u}${h.beta ? ' (бета)' : ''} — останній допис ${age}`;
         })
         .join('\n');
 }

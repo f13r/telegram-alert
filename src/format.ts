@@ -56,10 +56,10 @@ export function formatAlert(
     let confidence = '';
     if (shown.length === 1) {
         const { town, d } = shown[0];
-        header = `🚨 <b>${town.header}</b> · ${d.confidencePct}%`;
+        header = `🚨 <b>${town.header}</b>`;
         if (d.sourceCount > 1) confidence = ` · підтверджено (${d.sourceCount} ${sourcesWord(d.sourceCount)})`;
     } else {
-        header = '🚨 ' + shown.map(({ town, d }) => `<b>${town.header}</b> ${d.confidencePct}%`).join(' · ');
+        header = '🚨 ' + shown.map(({ town, d }) => `<b>${town.header}</b>`).join(' · ');
     }
 
     return [

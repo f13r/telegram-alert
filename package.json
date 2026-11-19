@@ -1,7 +1,7 @@
 {
   "name": "telegram-alert",
   "version": "1.0.0",
-  "description": "Town air-threat alerts (Вінниця, Ладижин, Козятин) from Telegram monitoring channels",
+  "description": "Town air-threat alerts (Вінниця, Ладижин, Козятин, Вороновиця) from Telegram monitoring channels",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",

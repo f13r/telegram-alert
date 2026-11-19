@@ -5,8 +5,8 @@ import { matchTowns, scanTowns } from '../src/matcher.js';
 
 const ids = (s: string) => matchTowns(s).map((m) => m.townId);
 
-test('catalogue: Вінниця, Ладижин, Козятин in order', () => {
-    assert.deepEqual(towns.map((t) => t.id), ['vinnytsia', 'ladyzhyn', 'koziatyn']);
+test('catalogue: Вінниця, Ладижин, Козятин, Вороновиця in order', () => {
+    assert.deepEqual(towns.map((t) => t.id), ['vinnytsia', 'ladyzhyn', 'koziatyn', 'voronovytsia']);
 });
 
 for (const t of towns) {
@@ -58,4 +58,9 @@ test('a town named only as a landmark is reported, not matched', () => {
 test('landmark phrases work for every town', () => {
     assert.deepEqual(ids('БпЛА західніше Козятина'), []);
     assert.deepEqual(ids('БпЛА південніше Ладижина'), []);
+});
+
+test('Вороновиця: the settlement fires, the adjective and a dual mention do not mix up', () => {
+    assert.deepEqual(ids('Реактивний БпЛА на Вороновицю/Вінницю'), ['vinnytsia', 'voronovytsia']);
+    assert.deepEqual(ids('Вороновицька громада'), []);
 });

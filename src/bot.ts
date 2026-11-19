@@ -158,7 +158,7 @@ export function buildBot(sourceName: string): Telegraf {
             [
                 `<b>Статус</b>`,
                 `джерело: ${sourceName}`,
-                `канали: ${channelsConfig.channels.filter((c) => trackOf(ctx.chat.id) === 'beta' || !c.beta).length}`,
+                `канали: ${channelsConfig.channels.length}`,
                 `підписників: ${getSubscribers().length}`,
                 `аптайм: ${uptime()}`,
                 `ваші міста: ${escapeHtml(mine)}`,

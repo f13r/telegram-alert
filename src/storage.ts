@@ -38,6 +38,7 @@ function migrateWindow(w: StoredWindow): WindowState {
 }
 
 let data: StorageData = load();
+migrateSubscribers();
 
 function load(): StorageData {
     try {
@@ -87,10 +88,26 @@ export const getSubscribers = (): Subscriber[] => data.subscribers;
 /** A new subscriber starts with only these towns on; the rest are one tap away in /cities. */
 const DEFAULT_TOWNS = ['vinnytsia'];
 
+/**
+ * Subscribers used to store the towns they muted, so every new town came on for everyone.
+ * Freeze the current choice as an explicit `on` list once; towns added later stay off
+ * until the subscriber turns them on in /cities.
+ */
+function migrateSubscribers(): void {
+    let changed = false;
+    for (const sub of data.subscribers) {
+        if (sub.on) continue;
+        const off = new Set(sub.off ?? []);
+        sub.on = towns.map((t) => t.id).filter((id) => !off.has(id));
+        delete sub.off;
+        changed = true;
+    }
+    if (changed) persist();
+}
+
 export function addSubscriber(chatId: number, name: string): boolean {
     if (data.subscribers.some((s) => s.chatId === chatId)) return false;
-    const off = towns.map((t) => t.id).filter((id) => !DEFAULT_TOWNS.includes(id));
-    data.subscribers.push({ chatId, name, since: new Date().toISOString(), off });
+    data.subscribers.push({ chatId, name, since: new Date().toISOString(), on: [...DEFAULT_TOWNS] });
     persist();
     return true;
 }
@@ -108,17 +125,17 @@ export const getSubscriber = (chatId: number): Subscriber | undefined =>
 
 /** Catalogue towns this subscriber gets alerts for. Ids no longer in the catalogue are ignored. */
 export function followedTowns(sub: Subscriber): string[] {
-    const off = new Set(sub.off ?? []);
-    return towns.map((t) => t.id).filter((id) => !off.has(id));
+    const on = new Set(sub.on ?? []);
+    return towns.map((t) => t.id).filter((id) => on.has(id));
 }
 
 /** Flip one town for one subscriber. Returns the new state (true = on), or null if not subscribed. */
 export function toggleTown(chatId: number, townId: string): boolean | null {
     const sub = getSubscriber(chatId);
     if (!sub) return null;
-    const off = sub.off ?? [];
-    const nowOn = off.includes(townId);
-    sub.off = nowOn ? off.filter((id) => id !== townId) : [...off, townId];
+    const on = sub.on ?? [];
+    const nowOn = !on.includes(townId);
+    sub.on = nowOn ? [...on, townId] : on.filter((id) => id !== townId);
     persist();
     return nowOn;
 }

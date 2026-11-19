@@ -88,3 +88,23 @@ export function fastTowns(text: string, towns: string[], opts: ScanOptions = {})
             sections.some((sec) => isFastThreat(sec) && scanTowns(sec, opts).matches.some((m) => m.townId === t)),
     );
 }
+
+/** «у бік Вінниці», «в районі Вінниці»: the target is somewhere toward the town, not at it. */
+const vagueRe = /(?:(?:у|в)\s+(?:бік|напрямку|районі)|поблизу|біля)\s+(?:м\.\s*|міста\s+)?$/u;
+
+/**
+ * True when every mention of `form` in `text` is introduced by vague direction wording.
+ * Judged on the mention itself, so «в районі Вінниці курсом на Літин» is vague
+ * while «летить на Вінницю» is not.
+ */
+export function isVagueDirection(text: string, form: string): boolean {
+    const t = normalize(text);
+    const f = normalize(form);
+    if (!f) return false;
+    let seen = false;
+    for (let i = t.indexOf(f); i !== -1; i = t.indexOf(f, i + 1)) {
+        seen = true;
+        if (!vagueRe.test(t.slice(Math.max(0, i - 25), i))) return false;
+    }
+    return seen;
+}

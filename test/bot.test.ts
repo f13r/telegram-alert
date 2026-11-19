@@ -13,12 +13,12 @@ const rows = (chatId: number) =>
 
 test('new subscriber starts with only Вінниця on', () => {
     addSubscriber(5, 'x');
-    assert.deepEqual(rows(5), ['✅ Вінниця', '⬜ Ладижин', '⬜ Козятин']);
+    assert.deepEqual(rows(5), ['✅ Вінниця', '⬜ Ладижин', '⬜ Козятин', '⬜ Вороновиця']);
 });
 
 test('keyboard: one row per town, in catalogue order, with state', () => {
     toggleTown(5, 'ladyzhyn');
-    assert.deepEqual(rows(5), ['✅ Вінниця', '✅ Ладижин', '⬜ Козятин']);
+    assert.deepEqual(rows(5), ['✅ Вінниця', '✅ Ладижин', '⬜ Козятин', '⬜ Вороновиця']);
     const k = citiesKeyboard(getSubscriber(5)!);
     assert.equal(k.reply_markup.inline_keyboard[1][0].callback_data, 'town:ladyzhyn');
     assert.doesNotMatch(k.text, /жодного/);

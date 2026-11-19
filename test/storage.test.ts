@@ -20,7 +20,7 @@ fs.writeFileSync(
     }),
 );
 const s = await import('../src/storage.js');
-const ALL = ['vinnytsia', 'ladyzhyn', 'koziatyn'];
+const ALL = ['vinnytsia', 'ladyzhyn', 'koziatyn', 'voronovytsia'];
 
 test('legacy window migrates to windows.vinnytsia; an announced raid counts as loud at its last match', () => {
     assert.deepEqual(s.getTownWindow('vinnytsia'), { loudAt: 20, sources: {}, fastSources: {} });
@@ -37,8 +37,16 @@ test('first boot with tracks: beta starts as a copy of stable, then goes its own
     s.getTownWindow('vinnytsia', 'beta').loudAt = 20;
 });
 
-test('legacy subscriber follows every town', () => {
+test('legacy subscriber (no choice stored) keeps every town that exists today', () => {
     assert.deepEqual(s.followedTowns(s.getSubscriber(1)!), ALL);
+});
+
+test('a town added to the catalogue later is off until the subscriber turns it on', () => {
+    const sub = s.getSubscriber(1)!;
+    sub.on = ['vinnytsia', 'ladyzhyn', 'koziatyn']; // chosen before voronovytsia existed
+    assert.deepEqual(s.followedTowns(sub), ['vinnytsia', 'ladyzhyn', 'koziatyn']);
+    assert.equal(s.toggleTown(1, 'voronovytsia'), true);
+    assert.deepEqual(s.followedTowns(sub), ALL);
 });
 
 test('unknown id in off is ignored', () => {
@@ -47,10 +55,11 @@ test('unknown id in off is ignored', () => {
 
 test('toggle off then on, persisted', () => {
     assert.equal(s.toggleTown(1, 'ladyzhyn'), false);
-    assert.deepEqual(s.followedTowns(s.getSubscriber(1)!), ['vinnytsia', 'koziatyn']);
+    assert.deepEqual(s.followedTowns(s.getSubscriber(1)!), ['vinnytsia', 'koziatyn', 'voronovytsia']);
 
     const disk = JSON.parse(fs.readFileSync(path.join(dir, 'data.json'), 'utf8'));
-    assert.deepEqual(disk.subscribers[0].off, ['ladyzhyn']);
+    assert.deepEqual(disk.subscribers[0].on, ['vinnytsia', 'koziatyn', 'voronovytsia']);
+    assert.equal(disk.subscribers[0].off, undefined, 'legacy off dropped');
     assert.equal(disk.window, undefined, 'legacy field dropped on persist');
     assert.equal(disk.windows.vinnytsia.loudAt, 20);
 

@@ -19,6 +19,7 @@
       "username": "ukraine_pyxx",
       "label": "ukraine_pyxx",
       "reliability": 0.9,
+      "vagueNeedsSecondSource": true,
       "requiresThreat": false,
       "stripFooterPatterns": [],
       "webPreview": true
@@ -86,6 +87,7 @@
       "beta": true
     }
   ],
+  "_vagueNeedsSecondSource": "true = a post that only points toward the town («у бік Вінниці», «в районі Вінниці») counts as 0.5 here, so it goes loud only with a second channel. Direct wording («на Вінницю», «курсом на Вінницю») keeps the full reliability. Applies to stable and beta.",
   "_beta": "true = only the beta track (BETA_CHAT_IDS in .env) reads this channel. Stable subscribers, the watchdog and the stable shadow log never see it. Not scraped at all while BETA_CHAT_IDS is empty.",
   "_webPreview": "false = channel genuinely publishes no t.me/s page. A transient 302 is NOT this — it recovers on its own, is handled by backoff, and is logged as [scrape:302]."
 }

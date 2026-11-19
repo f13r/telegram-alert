@@ -244,3 +244,16 @@ test('shot-down-only posts are not threats', () => {
     for (const s of ['Попередньо збитий, у передмісті Вінниці.', 'Збито над Вінницею']) assert.ok(isShotDownOnly(s), s);
     for (const s of ['БпЛА на Вінницю', 'Збитий, ще один шахед на Вінницю']) assert.ok(!isShotDownOnly(s), s);
 });
+
+test('ukraine_pyxx «у бік Вінниці» alone stays silent, direct wording goes loud', () => {
+    const vague = recordMatch(fresh(), 'ukraine_pyxx', false, 0, true);
+    assert.ok(!vague.loud);
+    assert.ok(recordMatch(fresh(), 'ukraine_pyxx', false, 0, false).loud);
+});
+
+test('ukraine_pyxx «у бік Вінниці» goes loud with a second channel, but not alone twice', () => {
+    const s = fresh();
+    assert.ok(!recordMatch(s, 'ukraine_pyxx', false, 0, true).loud);
+    assert.ok(!recordMatch(s, 'ukraine_pyxx', false, MIN, true).loud);
+    assert.ok(recordMatch(s, 'vinnytsiappo', false, 2 * MIN).loud);
+});

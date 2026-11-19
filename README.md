@@ -1,4 +1,4 @@
-# Air-alert bot — Вінниця, Ладижин, Козятин
+# Air-alert bot — Вінниця, Ладижин, Козятин, Вороновиця
 
 Watches Ukrainian air-threat Telegram channels and notifies you **only** when a town you
 follow is named — with a confidence score based on how many channels corroborate.
@@ -70,7 +70,7 @@ run the tests, and you will know immediately what else you changed.
 Every message from every channel is logged, matched or not:
 
 ```bash
-grep -i 'вінн\|винн\|vinn\|ладиж\|козят' data/shadow-*.ndjson | jq -r 'select(.matched==false) | .text'
+grep -i 'вінн\|винн\|vinn\|ладиж\|козят\|воронов' data/shadow-*.ndjson | jq -r 'select(.matched==false) | .text'
 ```
 
 Anything real in that output is a phrasing to add to that town's file in `config/towns/`.

@@ -32,6 +32,8 @@ export interface ChannelCfg {
     /** Drop after-the-fact news (config/news-keywords.json) — for local channels. */
     rejectNews?: boolean;
     stripFooterPatterns: string[];
+    /** A post that only points toward a town («у бік», «в районі») needs a second channel to go loud. */
+    vagueNeedsSecondSource?: boolean;
     /** Also match city districts — only for oblast-only channels, see config/channels.json. */
     localDistricts?: boolean;
     /** false = the channel has no public t.me/s page, so it cannot be read. */
@@ -50,7 +52,9 @@ export interface Subscriber {
     chatId: number;
     name: string;
     since: string;
-    /** Town ids this subscriber muted. Missing = every town on. */
+    /** Town ids this subscriber follows. A town added to the catalogue later is NOT in it: new towns start off. */
+    on?: string[];
+    /** Legacy: town ids muted. Converted to `on` at boot (see storage.ts). */
     off?: string[];
 }
 
